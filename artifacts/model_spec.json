@@ -1,0 +1,93 @@
+{
+  "model_name": "har_1dcnn",
+  "total_params": 305,
+  "input_shape": [
+    null,
+    19,
+    1
+  ],
+  "output_shape": [
+    null,
+    5
+  ],
+  "layers": [
+    {
+      "name": "input",
+      "type": "InputLayer",
+      "output_shape": [
+        null,
+        19,
+        1
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {}
+    },
+    {
+      "name": "conv1d",
+      "type": "Conv1D",
+      "output_shape": [
+        null,
+        1,
+        12
+      ],
+      "param_count": 240,
+      "weight_shapes": {
+        "kernel": [
+          19,
+          1,
+          12
+        ],
+        "bias": [
+          12
+        ]
+      },
+      "config": {
+        "filters": 12,
+        "kernel_size": [
+          19
+        ],
+        "strides": [
+          1
+        ],
+        "padding": "valid",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "flatten",
+      "type": "Flatten",
+      "output_shape": [
+        null,
+        12
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {}
+    },
+    {
+      "name": "dense_output",
+      "type": "Dense",
+      "output_shape": [
+        null,
+        5
+      ],
+      "param_count": 65,
+      "weight_shapes": {
+        "kernel": [
+          12,
+          5
+        ],
+        "bias": [
+          5
+        ]
+      },
+      "config": {
+        "units": 5,
+        "activation": "softmax",
+        "use_bias": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+    "_comment": [
+        "19 statistical features selected following the paper's criteria for",
+        "efficient FPGA implementation of neural networks for HAR.",
+        "",
+        "Selection rationale (paper criteria):",
+        "  - Mean and standard deviation of body acceleration (X, Y, Z)     -> 6 features",
+        "  - Mean and standard deviation of gravity acceleration magnitude   -> 2 features",
+        "  - Mean and standard deviation of body acceleration jerk (X, Y, Z) -> 6 features",
+        "  - Mean and standard deviation of body acceleration magnitude      -> 2 features",
+        "  - Mean of body jerk magnitude                                     -> 1 feature",
+        "  - Mean and standard deviation of body gyroscope magnitude         -> 2 features",
+        "",
+        "Total: 19 features.  These capture translational dynamics (accel),",
+        "rotational dynamics (gyro), jerk (derivative), and magnitudes,",
+        "which are the most discriminative for HAR on FPGA with minimal",
+        "computational overhead.",
+        "",
+        "feature_indices are 1-based as in the UCI features.txt file.",
+        "feature_names match the UCI features.txt naming convention exactly."
+    ],
+    "feature_indices_1based": [
+        1, 2, 3, 4, 5, 6,
+        41, 42, 43, 44, 45, 46,
+        201, 202,
+        214, 215,
+        227, 228,
+        253
+    ],
+    "feature_names": [
+        "tBodyAcc-mean()-X",
+        "tBodyAcc-mean()-Y",
+        "tBodyAcc-mean()-Z",
+        "tBodyAcc-std()-X",
+        "tBodyAcc-std()-Y",
+        "tBodyAcc-std()-Z",
+        "tGravityAcc-mean()-X",
+        "tGravityAcc-mean()-Y",
+        "tGravityAcc-mean()-Z",
+        "tGravityAcc-std()-X",
+        "tGravityAcc-std()-Y",
+        "tGravityAcc-std()-Z",
+        "tBodyAccMag-mean()",
+        "tBodyAccMag-std()",
+        "tGravityAccMag-mean()",
+        "tGravityAccMag-std()",
+        "tBodyAccJerkMag-mean()",
+        "tBodyAccJerkMag-std()",
+        "tBodyGyroMag-mean()"
+    ],
+    "num_features": 19
+}
