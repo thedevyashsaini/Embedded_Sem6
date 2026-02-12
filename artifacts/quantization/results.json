@@ -1,0 +1,54 @@
+[
+  {
+    "variant": "fp32",
+    "accuracy": 0.9267051238547676,
+    "inference_time_s": 0.15701127000002088,
+    "weight_size_bytes": 1220,
+    "per_class_accuracy": {
+      "WALKING": 1.0,
+      "SITTING": 0.7556008146639511,
+      "STANDING": 0.8703007518796992,
+      "LAYING": 0.9497206703910615,
+      "TRANSITION": 0.0
+    }
+  },
+  {
+    "variant": "fp16",
+    "accuracy": 0.9267051238547676,
+    "inference_time_s": 0.15352804999997716,
+    "weight_size_bytes": 610,
+    "per_class_accuracy": {
+      "WALKING": 1.0,
+      "SITTING": 0.7556008146639511,
+      "STANDING": 0.8703007518796992,
+      "LAYING": 0.9497206703910615,
+      "TRANSITION": 0.0
+    }
+  },
+  {
+    "variant": "int16",
+    "accuracy": 0.9267051238547676,
+    "inference_time_s": 0.1468091499999673,
+    "weight_size_bytes": 610,
+    "per_class_accuracy": {
+      "WALKING": 1.0,
+      "SITTING": 0.7556008146639511,
+      "STANDING": 0.8703007518796992,
+      "LAYING": 0.9497206703910615,
+      "TRANSITION": 0.0
+    }
+  },
+  {
+    "variant": "int8",
+    "accuracy": 0.9267051238547676,
+    "inference_time_s": 0.13960719999997764,
+    "weight_size_bytes": 305,
+    "per_class_accuracy": {
+      "WALKING": 1.0,
+      "SITTING": 0.7494908350305499,
+      "STANDING": 0.8759398496240601,
+      "LAYING": 0.9497206703910615,
+      "TRANSITION": 0.0
+    }
+  }
+]

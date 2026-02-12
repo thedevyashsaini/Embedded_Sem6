@@ -1,0 +1,32 @@
+{
+  "dtype": "float16",
+  "layers": {
+    "conv1d/kernel": {
+      "shape": [
+        19,
+        1,
+        12
+      ],
+      "count": 228
+    },
+    "conv1d/bias": {
+      "shape": [
+        12
+      ],
+      "count": 12
+    },
+    "dense_output/kernel": {
+      "shape": [
+        12,
+        5
+      ],
+      "count": 60
+    },
+    "dense_output/bias": {
+      "shape": [
+        5
+      ],
+      "count": 5
+    }
+  }
+}
