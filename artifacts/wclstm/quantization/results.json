@@ -1,0 +1,61 @@
+{
+  "model_type": "wclstm",
+  "results": [
+    {
+      "variant": "fp32",
+      "accuracy": 0.829996606718697,
+      "inference_time_s": 2.6221531600000163,
+      "weight_size_bytes": 491796,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.9042769857433809,
+        "STANDING": 0.14849624060150377,
+        "LAYING": 0.9981378026070763,
+        "TRANSITION": 0.0
+      },
+      "total_params": 122949
+    },
+    {
+      "variant": "fp16",
+      "accuracy": 0.829996606718697,
+      "inference_time_s": 2.6387738400007947,
+      "weight_size_bytes": 245898,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.9042769857433809,
+        "STANDING": 0.14849624060150377,
+        "LAYING": 0.9981378026070763,
+        "TRANSITION": 0.0
+      },
+      "total_params": 122949
+    },
+    {
+      "variant": "int16",
+      "accuracy": 0.829996606718697,
+      "inference_time_s": 2.5254952100010994,
+      "weight_size_bytes": 245898,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.9042769857433809,
+        "STANDING": 0.14849624060150377,
+        "LAYING": 0.9981378026070763,
+        "TRANSITION": 0.0
+      },
+      "total_params": 122949
+    },
+    {
+      "variant": "int8",
+      "accuracy": 0.826942653545979,
+      "inference_time_s": 1.9862745200000063,
+      "weight_size_bytes": 122949,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.9164969450101833,
+        "STANDING": 0.12030075187969924,
+        "LAYING": 0.9981378026070763,
+        "TRANSITION": 0.0
+      },
+      "total_params": 122949
+    }
+  ]
+}

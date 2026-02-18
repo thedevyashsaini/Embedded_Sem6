@@ -1,5 +1,5 @@
 {
-    "_comment": "Training hyper-parameters for the lightweight 1D-CNN HAR model.",
+    "_comment": "Training hyper-parameters for all HAR models.",
     "epochs": 30,
     "batch_size": 64,
     "learning_rate": 0.001,
@@ -8,15 +8,50 @@
     "optimizer": "adam",
     "loss": "sparse_categorical_crossentropy",
 
-    "model": {
-        "input_length": 19,
-        "conv_filters": 12,
-        "conv_kernel_size": 19,
-        "conv_stride": 1,
-        "conv_padding": "valid",
-        "conv_activation": "relu",
-        "num_classes": 5,
-        "output_activation": "softmax"
+    "models": {
+        "1dcnn": {
+            "_comment": "Lightweight 1D-CNN on 19 pre-extracted features.",
+            "data_mode": "features",
+            "input_length": 19,
+            "conv_filters": 12,
+            "conv_kernel_size": 19,
+            "conv_stride": 1,
+            "conv_padding": "valid",
+            "conv_activation": "relu",
+            "num_classes": 5,
+            "output_activation": "softmax"
+        },
+        "cnn_lstm": {
+            "_comment": "CNN+LSTM (DCLSTM) on raw 128x9 inertial signals.",
+            "data_mode": "raw",
+            "input_timesteps": 128,
+            "input_channels": 9,
+            "conv1_filters": 64,
+            "conv1_kernel_size": 5,
+            "conv2_filters": 64,
+            "conv2_kernel_size": 5,
+            "conv_activation": "relu",
+            "lstm_units": 128,
+            "dropout_rate": 0.3,
+            "num_classes": 5,
+            "output_activation": "softmax"
+        },
+        "wclstm": {
+            "_comment": "Wavelet-CNN+LSTM on wavelet-decomposed 128x9 signals.",
+            "data_mode": "wavelet",
+            "wavelet": "db4",
+            "wavelet_level": 2,
+            "input_channels": 9,
+            "conv1_filters": 64,
+            "conv1_kernel_size": 5,
+            "conv2_filters": 64,
+            "conv2_kernel_size": 5,
+            "conv_activation": "relu",
+            "lstm_units": 128,
+            "dropout_rate": 0.3,
+            "num_classes": 5,
+            "output_activation": "softmax"
+        }
     },
 
     "label_map": {

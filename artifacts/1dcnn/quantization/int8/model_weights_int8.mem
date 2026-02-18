@@ -1,4 +1,4 @@
-// HAR 1D-CNN  INT8 quantized weights (symmetric)
+// HAR Model  INT8 quantized weights (symmetric)
 
 // conv1d/kernel  shape=(19x1x12)  count=228  scale=8.8904148012e-03
 0b

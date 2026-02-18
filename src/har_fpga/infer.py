@@ -1,17 +1,18 @@
 """
-infer.py — Run inference with the trained HAR model.
+infer.py — Run inference with a trained HAR model.
+
+Supports all three architectures: 1dcnn, cnn_lstm, wclstm.
 
 Usage:
-    # Single sample from comma-separated values (19 floats):
-    uv run python -m har_fpga.infer --sample "0.28,-0.02,-0.13,..."
+    # Single sample (1D-CNN only, 19 comma-separated features):
+    uv run python -m har_fpga.infer --model 1dcnn --sample "0.28,-0.02,-0.13,..."
 
-    # Batch inference from a text file (one sample per line, 19 space/comma-separated values):
-    uv run python -m har_fpga.infer --file path/to/samples.txt
+    # Evaluate on the UCI HAR test split:
+    uv run python -m har_fpga.infer --model 1dcnn --test
+    uv run python -m har_fpga.infer --model cnn_lstm --test
+    uv run python -m har_fpga.infer --model wclstm --test
 
-    # Run on the test split and print accuracy:
-    uv run python -m har_fpga.infer --test
-
-The scaler (artifacts/scaler.json) is applied automatically.
+The scaler (artifacts/<model>/scaler.json) is applied automatically.
 """
 
 from __future__ import annotations
@@ -25,11 +26,15 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+from har_fpga.model import MODEL_TYPES
 from har_fpga.preprocess import ZScoreScaler
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ARTIFACT_DIR = PROJECT_ROOT / "artifacts"
 CONFIG_DIR = PROJECT_ROOT / "configs"
+
+
+def _artifact_dir(model_type: str) -> Path:
+    return PROJECT_ROOT / "artifacts" / model_type
 
 
 def _load_class_names() -> list[str]:
@@ -37,16 +42,25 @@ def _load_class_names() -> list[str]:
         return json.load(f)["class_names"]
 
 
+def _load_training_config() -> dict:
+    with open(CONFIG_DIR / "training.json", "r") as f:
+        return json.load(f)
+
+
 def _load_model_and_scaler(
+    model_type: str,
     model_path: Path | None = None,
     scaler_path: Path | None = None,
 ) -> tuple[keras.Model, ZScoreScaler, list[str]]:
-    model_path = model_path or ARTIFACT_DIR / "har_model.keras"
-    scaler_path = scaler_path or ARTIFACT_DIR / "scaler.json"
+    adir = _artifact_dir(model_type)
+    model_path = model_path or adir / "har_model.keras"
+    scaler_path = scaler_path or adir / "scaler.json"
 
     if not model_path.exists():
         print(f"[infer] ERROR: Model not found at {model_path}")
-        print("        Train first: uv run python -m har_fpga.train")
+        print(
+            f"        Train first: uv run python -m har_fpga.train --model {model_type}"
+        )
         sys.exit(1)
     if not scaler_path.exists():
         print(f"[infer] ERROR: Scaler not found at {scaler_path}")
@@ -56,6 +70,68 @@ def _load_model_and_scaler(
     scaler = ZScoreScaler.load(scaler_path)
     class_names = _load_class_names()
     return model, scaler, class_names
+
+
+def _apply_wavelet_transform(
+    X: np.ndarray,
+    wavelet: str = "db4",
+    level: int = 2,
+) -> np.ndarray:
+    """Apply wavelet decomposition to raw inertial signals."""
+    import pywt
+
+    N, T, C = X.shape
+    sample_signal = X[0, :, 0]
+    coeffs = pywt.wavedec(sample_signal, wavelet, level=level)
+    concat_sample = np.concatenate(coeffs)
+    T_wt = len(concat_sample)
+
+    X_wt = np.empty((N, T_wt, C), dtype=np.float32)
+    for i in range(N):
+        for ch in range(C):
+            coeffs = pywt.wavedec(X[i, :, ch], wavelet, level=level)
+            X_wt[i, :, ch] = np.concatenate(coeffs)
+    return X_wt
+
+
+def _preprocess_for_model(
+    X_raw: np.ndarray,
+    scaler: ZScoreScaler,
+    model_type: str,
+    cfg: dict,
+) -> np.ndarray:
+    """Preprocess raw data for a specific model type.
+
+    Parameters
+    ----------
+    X_raw : ndarray
+        Raw feature vectors (N, 19) for 1dcnn, or raw signals (N, 128, 9).
+    scaler : ZScoreScaler
+    model_type : str
+    cfg : dict
+        The model-specific config from training.json.
+
+    Returns
+    -------
+    X : ndarray ready for model.predict()
+    """
+    data_mode = cfg.get("data_mode", "features")
+
+    if data_mode == "wavelet":
+        wavelet = cfg.get("wavelet", "db4")
+        level = cfg.get("wavelet_level", 2)
+        X_raw = _apply_wavelet_transform(X_raw, wavelet=wavelet, level=level)
+
+    if X_raw.ndim == 3:
+        N, T, C = X_raw.shape
+        X_2d = X_raw.reshape(N, T * C)
+        X_2d = scaler.transform(X_2d)
+        X = X_2d.reshape(N, T, C)
+    else:
+        X = scaler.transform(X_raw)
+        X = X[..., np.newaxis]  # (N, 19, 1) for 1D-CNN
+
+    return X
 
 
 # -----------------------------------------------------------------------
@@ -69,6 +145,7 @@ def predict_single(
 ) -> dict:
     """Predict class for a single raw feature vector (19,).
 
+    Only works for 1dcnn model.
     Returns dict with keys: predicted_class, class_name, probabilities.
     """
     x = raw_features.reshape(1, -1)  # (1, 19)
@@ -84,18 +161,15 @@ def predict_single(
 
 
 def predict_batch(
-    raw_features: np.ndarray,
+    X: np.ndarray,
     model: keras.Model,
-    scaler: ZScoreScaler,
     class_names: list[str],
 ) -> np.ndarray:
-    """Predict classes for a batch of raw feature vectors (N, 19).
+    """Predict classes for a preprocessed batch.
 
     Returns array of predicted class indices (N,).
     """
-    x = scaler.transform(raw_features)
-    x = x[..., np.newaxis]
-    probs = model.predict(x, verbose=0)
+    probs = model.predict(X, verbose=0)
     return np.argmax(probs, axis=1)
 
 
@@ -104,18 +178,25 @@ def predict_batch(
 # -----------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run inference with the trained HAR 1D-CNN model."
+        description="Run inference with a trained HAR model."
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="1dcnn",
+        choices=list(MODEL_TYPES),
+        help="Model architecture (default: 1dcnn)",
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--sample",
         type=str,
-        help="Comma-separated 19 feature values for single prediction",
+        help="Comma-separated 19 feature values for single prediction (1dcnn only)",
     )
     group.add_argument(
         "--file",
         type=str,
-        help="Path to text file with samples (one per line, 19 values each)",
+        help="Path to text file with samples (one per line)",
     )
     group.add_argument(
         "--test",
@@ -124,10 +205,20 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    model, scaler, class_names = _load_model_and_scaler()
+    model_type = args.model
+    model, scaler, class_names = _load_model_and_scaler(model_type)
+    cfg = _load_training_config()
+    model_cfg = cfg["models"][model_type]
+    data_mode = model_cfg.get("data_mode", "features")
 
-    # ---- Single sample ----
+    print(f"[infer] Model: {model_type.upper()}")
+
+    # ---- Single sample (1dcnn only) ----
     if args.sample:
+        if model_type != "1dcnn":
+            print(f"[infer] ERROR: --sample is only supported for 1dcnn model.")
+            print(f"        For {model_type}, use --test to evaluate on test set.")
+            sys.exit(1)
         values = [float(v.strip()) for v in args.sample.split(",")]
         if len(values) != 19:
             print(f"[infer] ERROR: Expected 19 values, got {len(values)}")
@@ -141,8 +232,11 @@ def main() -> None:
             bar = "#" * int(p * 40)
             print(f"  {cn:>12s}: {p:.4f}  {bar}")
 
-    # ---- Batch from file ----
+    # ---- Batch from file (1dcnn only) ----
     elif args.file:
+        if model_type != "1dcnn":
+            print(f"[infer] ERROR: --file is only supported for 1dcnn model.")
+            sys.exit(1)
         filepath = Path(args.file)
         if not filepath.exists():
             print(f"[infer] ERROR: File not found: {filepath}")
@@ -153,17 +247,25 @@ def main() -> None:
         if data.shape[1] != 19:
             print(f"[infer] ERROR: Expected 19 columns, got {data.shape[1]}")
             sys.exit(1)
-        preds = predict_batch(data, model, scaler, class_names)
+        X = _preprocess_for_model(data, scaler, model_type, model_cfg)
+        preds = predict_batch(X, model, class_names)
         for i, pred in enumerate(preds):
             print(f"  Sample {i:4d}: {class_names[pred]} (class {pred})")
         print(f"\nTotal: {len(preds)} samples")
 
     # ---- Test split evaluation ----
     elif args.test:
-        from har_fpga.data import load_har_data
+        if data_mode == "features":
+            from har_fpga.data import load_har_data
 
-        _, _, X_test, y_test, _, _ = load_har_data(download=False)
-        preds = predict_batch(X_test, model, scaler, class_names)
+            _, _, X_test_raw, y_test, _, _ = load_har_data(download=False)
+        else:
+            from har_fpga.data import load_har_raw
+
+            _, _, X_test_raw, y_test, _, _ = load_har_raw(download=False)
+
+        X_test = _preprocess_for_model(X_test_raw, scaler, model_type, model_cfg)
+        preds = predict_batch(X_test, model, class_names)
         acc = np.mean(preds == y_test)
         print(
             f"\nTest set accuracy: {acc:.4f} ({np.sum(preds == y_test)}/{len(y_test)})"

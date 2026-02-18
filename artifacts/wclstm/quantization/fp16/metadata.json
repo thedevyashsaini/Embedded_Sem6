@@ -1,0 +1,66 @@
+{
+  "dtype": "float16",
+  "layers": {
+    "conv1d_1/kernel": {
+      "shape": [
+        5,
+        9,
+        64
+      ],
+      "count": 2880
+    },
+    "conv1d_1/bias": {
+      "shape": [
+        64
+      ],
+      "count": 64
+    },
+    "conv1d_2/kernel": {
+      "shape": [
+        5,
+        64,
+        64
+      ],
+      "count": 20480
+    },
+    "conv1d_2/bias": {
+      "shape": [
+        64
+      ],
+      "count": 64
+    },
+    "lstm/kernel": {
+      "shape": [
+        64,
+        512
+      ],
+      "count": 32768
+    },
+    "lstm/recurrent_kernel": {
+      "shape": [
+        128,
+        512
+      ],
+      "count": 65536
+    },
+    "lstm/bias": {
+      "shape": [
+        512
+      ],
+      "count": 512
+    },
+    "dense_output/kernel": {
+      "shape": [
+        128,
+        5
+      ],
+      "count": 640
+    },
+    "dense_output/bias": {
+      "shape": [
+        5
+      ],
+      "count": 5
+    }
+  }
+}

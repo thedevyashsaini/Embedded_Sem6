@@ -1,61 +1,77 @@
 # HAR-FPGA: Human Activity Recognition for FPGA Deployment
 
-Lightweight 1D-CNN training pipeline for Human Activity Recognition (HAR) using the
-UCI HAR Smartphones dataset. The trained model is exported to JSON specs and `.mem`
-weight files for direct FPGA implementation.
+Multi-architecture training pipeline for Human Activity Recognition (HAR) using the
+UCI HAR Smartphones dataset. Supports three model architectures for comparison,
+with FPGA export (JSON spec + `.mem` weight files) and post-training quantization.
 
-Based on the research paper on efficient FPGA implementation of neural networks for HAR.
+Based on reference [10] from the research paper on efficient FPGA implementation of
+neural networks for HAR (DCLSTM achieving 97.8% and WCLSTM achieving 98.9% on UCI HAR).
 
 ---
 
 ## Table of Contents
 
-- [Results](#results)
+- [Supported Models](#supported-models)
+- [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
-- [How to Run](#how-to-run)
+- [CLI Reference](#cli-reference)
   - [Training](#training)
+  - [Inference / Test Evaluation](#inference--test-evaluation)
   - [Export for FPGA](#export-for-fpga)
-  - [Inference](#inference)
-- [Model Architecture](#model-architecture)
+  - [Quantization](#quantization)
+  - [Model Comparison](#model-comparison)
+- [Model Architectures](#model-architectures)
+  - [1D-CNN (1dcnn)](#1d-cnn-1dcnn)
+  - [CNN+LSTM / DCLSTM (cnn_lstm)](#cnnlstm--dclstm-cnn_lstm)
+  - [Wavelet CNN+LSTM / WCLSTM (wclstm)](#wavelet-cnnlstm--wclstm-wclstm)
 - [Dataset](#dataset)
-  - [Feature Selection](#feature-selection)
+  - [Data Modes](#data-modes)
   - [Label Mapping](#label-mapping)
 - [Preprocessing](#preprocessing)
 - [Artifacts Reference (for Hardware Team)](#artifacts-reference-for-hardware-team)
-  - [model_spec.json](#model_specjson)
-  - [model_weights.mem](#model_weightsmem)
-  - [scaler.json](#scalerjson)
-  - [har_model.keras](#har_modelkeras)
-  - [weights_readable.txt](#weights_readabletxt)
-  - [training_history.json](#training_historyjson)
 - [Source Code Reference](#source-code-reference)
 - [FPGA Implementation Notes](#fpga-implementation-notes)
-- [Inference Pseudocode (for Hardware Translation)](#inference-pseudocode-for-hardware-translation)
+- [Training Configuration](#training-configuration)
+- [Results](#results)
 
 ---
 
-## Results
+## Supported Models
 
-| Metric              | Value   |
-|---------------------|---------|
-| Training Accuracy   | 95.3%   |
-| Validation Accuracy | 95.7%   |
-| Test Accuracy       | 92.7%   |
-| Total Parameters    | 305     |
-| Model Size          | 1.19 KB |
-| Training Time (CPU) | ~10s    |
+| Model ID   | Architecture           | Input Data             | Parameters | Reference        |
+|------------|------------------------|------------------------|------------|------------------|
+| `1dcnn`    | 1D-CNN                 | 19 statistical features| ~305       | Baseline         |
+| `cnn_lstm` | CNN + LSTM (DCLSTM)    | 128x9 raw inertial     | ~122,949   | Paper ref [10]   |
+| `wclstm`   | Wavelet CNN+LSTM       | Wavelet-transformed    | ~122,949   | Paper ref [10]   |
 
-Per-class test accuracy:
+All three models use the same `--model` flag across all CLI commands.
 
-| Class      | Accuracy | Correct / Total |
-|------------|----------|-----------------|
-| WALKING    | 100.0%   | 1387 / 1387     |
-| SITTING    | 75.6%    | 371 / 491       |
-| STANDING   | 87.0%    | 463 / 532       |
-| LAYING     | 95.0%    | 510 / 537       |
-| TRANSITION | N/A      | no test samples |
+---
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+uv sync
+
+# 2. Train all three models
+uv run python -m har_fpga.train --model 1dcnn
+uv run python -m har_fpga.train --model cnn_lstm
+uv run python -m har_fpga.train --model wclstm
+
+# 3. Compare results
+uv run python -m har_fpga.compare --plot
+
+# 4. Quantize any model
+uv run python -m har_fpga.quantize --model 1dcnn
+uv run python -m har_fpga.quantize --model cnn_lstm
+uv run python -m har_fpga.quantize --model wclstm
+
+# 5. Export any model for FPGA
+uv run python -m har_fpga.export --model 1dcnn
+```
 
 ---
 
@@ -67,29 +83,41 @@ har-fpga/
 ├── README.md                       # This file
 │
 ├── configs/
-│   ├── features.json               # 19 selected feature names + indices
-│   └── training.json               # Hyperparameters, label map, model config
+│   ├── features.json               # 19 selected feature names + indices (for 1dcnn)
+│   └── training.json               # Hyperparameters, label map, per-model configs
 │
-├── src/har_fpga/                   # Source code (modular, translatable)
+├── src/har_fpga/                   # Source code
 │   ├── __init__.py
-│   ├── data.py                     # Download, extract, load UCI HAR, feature select, label merge
+│   ├── data.py                     # Load UCI HAR: features mode (19) or raw mode (128x9)
 │   ├── preprocess.py               # Z-score normalization (fit / transform / save / load)
-│   ├── model.py                    # Build Keras model, extract architecture spec
-│   ├── train.py                    # Full training pipeline with CLI
+│   ├── model.py                    # Build all 3 model architectures + extract spec
+│   ├── train.py                    # Training pipeline with --model flag
 │   ├── export.py                   # Export weights to .mem + JSON spec
-│   └── infer.py                    # Run inference (single sample / batch / test eval)
+│   ├── infer.py                    # Run inference / test evaluation
+│   ├── quantize.py                 # Post-training quantization comparison
+│   └── compare.py                  # Cross-model comparison tables + plots
 │
-├── artifacts/                      # Generated after training (SEND THIS TO HW TEAM)
-│   ├── har_model.keras             # Saved Keras model (for reloading in Python)
-│   ├── model_spec.json             # Layer-by-layer architecture spec (for FPGA)
-│   ├── model_weights.mem           # All weights as IEEE-754 hex (for Verilog $readmemh)
-│   ├── weights_readable.txt        # Human-readable weight dump (for inspection)
-│   ├── scaler.json                 # Z-score normalization constants (mean + std per feature)
-│   └── training_history.json       # Loss and accuracy per epoch
+├── artifacts/                      # Generated after training (per-model subdirectories)
+│   ├── 1dcnn/                      # Artifacts for the 1D-CNN model
+│   │   ├── har_model.keras
+│   │   ├── model_spec.json
+│   │   ├── model_weights.mem
+│   │   ├── weights_readable.txt
+│   │   ├── scaler.json
+│   │   ├── training_history.json
+│   │   └── quantization/           # Quantization results (after running quantize)
+│   │       ├── results.json
+│   │       ├── quantization_results.png
+│   │       ├── fp16/
+│   │       ├── int16/
+│   │       └── int8/
+│   ├── cnn_lstm/                   # Artifacts for the CNN+LSTM model (same structure)
+│   ├── wclstm/                     # Artifacts for the WCLSTM model (same structure)
+│   └── comparison.png              # Cross-model comparison plot (after running compare)
 │
 └── data/                           # Downloaded dataset (auto-cached, not committed)
     ├── UCI_HAR_Dataset.zip
-    └── UCI HAR Dataset/            # Extracted dataset directory
+    └── UCI HAR Dataset/
 ```
 
 ---
@@ -119,77 +147,166 @@ cd har-fpga
 uv sync
 ```
 
-This creates a `.venv`, resolves all dependencies (TensorFlow, NumPy, scikit-learn, requests),
-and installs the project in editable mode. Takes about 30-60 seconds on first run.
+This creates a `.venv`, resolves all dependencies (TensorFlow, NumPy, scikit-learn,
+requests, matplotlib, PyWavelets), and installs the project in editable mode.
 
 ---
 
-## How to Run
+## CLI Reference
+
+Every command accepts `--model {1dcnn,cnn_lstm,wclstm}` to select the architecture.
+The default is `1dcnn` if `--model` is omitted.
 
 ### Training
 
 ```bash
-# Default training (30 epochs, batch_size=64, lr=0.001)
-uv run python -m har_fpga.train
+# Train the 1D-CNN (default, 19 features, ~305 params)
+uv run python -m har_fpga.train --model 1dcnn
 
-# Custom hyperparameters
-uv run python -m har_fpga.train --epochs 50 --batch-size 32 --lr 0.0005
+# Train the CNN+LSTM (DCLSTM, raw 128x9 signals, ~123K params)
+uv run python -m har_fpga.train --model cnn_lstm
 
-# Force CPU (skip GPU detection)
-uv run python -m har_fpga.train --no-gpu
+# Train the WCLSTM (wavelet-transformed signals, ~123K params)
+uv run python -m har_fpga.train --model wclstm
+
+# Custom hyperparameters (works with any model)
+uv run python -m har_fpga.train --model cnn_lstm --epochs 50 --batch-size 32 --lr 0.0005
+
+# Force CPU training (skip GPU detection)
+uv run python -m har_fpga.train --model cnn_lstm --no-gpu
 ```
 
-On first run, the UCI HAR dataset (~61 MB) is automatically downloaded and cached in `data/`.
-Subsequent runs reuse the cached data.
+**Training arguments:**
 
-Training output:
-- Prints model summary, epoch-by-epoch loss/accuracy, and final train/test accuracy.
-- Saves all artifacts to `artifacts/`.
+| Argument       | Description                              | Default                   |
+|----------------|------------------------------------------|---------------------------|
+| `--model`      | Model architecture                       | `1dcnn`                   |
+| `--epochs`     | Number of training epochs                | 30 (from training.json)   |
+| `--batch-size` | Mini-batch size                          | 64 (from training.json)   |
+| `--lr`         | Learning rate                            | 0.001 (from training.json)|
+| `--no-gpu`     | Force CPU-only training                  | False                     |
+
+**Output:** All artifacts saved to `artifacts/<model_type>/`.
+
+On first run, the UCI HAR dataset (~61 MB) is automatically downloaded and cached in `data/`.
+
+### Inference / Test Evaluation
+
+```bash
+# Evaluate 1D-CNN on the UCI HAR test split
+uv run python -m har_fpga.infer --model 1dcnn --test
+
+# Evaluate CNN+LSTM on the test split
+uv run python -m har_fpga.infer --model cnn_lstm --test
+
+# Evaluate WCLSTM on the test split
+uv run python -m har_fpga.infer --model wclstm --test
+
+# Single sample prediction (1D-CNN only, 19 comma-separated features)
+uv run python -m har_fpga.infer --model 1dcnn --sample "0.289,-0.020,-0.133,-0.995,-0.983,-0.914,-0.727,0.117,0.679,-0.998,-0.975,-0.960,-0.112,-0.065,0.029,-0.032,-0.563,-0.440,-0.202"
+
+# Batch inference from file (1D-CNN only, one 19-value sample per line)
+uv run python -m har_fpga.infer --model 1dcnn --file path/to/samples.txt
+```
+
+**Inference arguments:**
+
+| Argument     | Description                                    | Notes                    |
+|--------------|------------------------------------------------|--------------------------|
+| `--model`    | Model architecture                             | `1dcnn` / `cnn_lstm` / `wclstm` |
+| `--test`     | Evaluate on UCI HAR test split                 | Works with all models    |
+| `--sample`   | Single 19-value comma-separated prediction     | 1dcnn only               |
+| `--file`     | Batch prediction from text file                | 1dcnn only               |
+
+**Note:** `--sample` and `--file` are only supported for `1dcnn` because the other models
+require raw inertial signals (128 timesteps x 9 channels) as input.
 
 ### Export for FPGA
 
 ```bash
-# Export model_spec.json + model_weights.mem from the trained model
-uv run python -m har_fpga.export
+# Export 1D-CNN model weights and spec for FPGA
+uv run python -m har_fpga.export --model 1dcnn
+
+# Export CNN+LSTM
+uv run python -m har_fpga.export --model cnn_lstm
+
+# Export WCLSTM
+uv run python -m har_fpga.export --model wclstm
 
 # Export from a specific model file
-uv run python -m har_fpga.export --model path/to/model.keras
+uv run python -m har_fpga.export --model 1dcnn --model-path path/to/model.keras
 ```
 
-This reads the saved `.keras` model and produces:
-- `model_spec.json` -- architecture for the hardware team
-- `model_weights.mem` -- weights in IEEE-754 hex for `$readmemh`
-- `weights_readable.txt` -- human-readable weight values
+**Export arguments:**
 
-### Inference
+| Argument       | Description                              | Default                              |
+|----------------|------------------------------------------|--------------------------------------|
+| `--model`      | Model architecture                       | `1dcnn`                              |
+| `--model-path` | Override Keras model file path           | `artifacts/<model>/har_model.keras`  |
+
+**Output files (in `artifacts/<model_type>/`):**
+- `model_spec.json` -- Architecture for the hardware team
+- `model_weights.mem` -- Weights in IEEE-754 hex for `$readmemh`
+- `weights_readable.txt` -- Human-readable weight values
+
+### Quantization
 
 ```bash
-# Predict a single sample (19 comma-separated raw feature values)
-uv run python -m har_fpga.infer --sample "0.289,-0.020,-0.133,-0.995,-0.983,-0.914,-0.727,0.117,0.679,-0.998,-0.975,-0.960,-0.112,-0.065,0.029,-0.032,-0.563,-0.440,-0.202"
+# Quantize the 1D-CNN model (FP32 vs FP16 vs INT16 vs INT8)
+uv run python -m har_fpga.quantize --model 1dcnn
 
-# Batch inference from a text file (one 19-value sample per line)
-uv run python -m har_fpga.infer --file path/to/samples.txt
+# Quantize the CNN+LSTM model
+uv run python -m har_fpga.quantize --model cnn_lstm
 
-# Evaluate on the UCI HAR test split (prints overall + per-class accuracy)
-uv run python -m har_fpga.infer --test
+# Quantize the WCLSTM model
+uv run python -m har_fpga.quantize --model wclstm
+
+# Quantize from a specific model file
+uv run python -m har_fpga.quantize --model cnn_lstm --model-path path/to/model.keras
 ```
 
-Single sample output example:
+**Quantization arguments:**
+
+| Argument       | Description                              | Default                              |
+|----------------|------------------------------------------|--------------------------------------|
+| `--model`      | Model architecture                       | `1dcnn`                              |
+| `--model-path` | Override Keras model file path           | `artifacts/<model>/har_model.keras`  |
+
+**Output (in `artifacts/<model_type>/quantization/`):**
+- `results.json` -- Accuracy, inference time, weight sizes per variant
+- `quantization_results.png` -- Comparison bar charts
+- `fp16/` -- FP16 weights (`.mem` + `metadata.json`)
+- `int16/` -- INT16 weights (`.mem` + `metadata.json`)
+- `int8/` -- INT8 weights (`.mem` + `metadata.json`)
+
+### Model Comparison
+
+```bash
+# Print comparison table of all trained models
+uv run python -m har_fpga.compare
+
+# Print comparison table + generate comparison bar chart
+uv run python -m har_fpga.compare --plot
 ```
-Predicted activity: LAYING (class 3)
-Probabilities:
-       WALKING: 0.0005
-       SITTING: 0.0000
-      STANDING: 0.0000
-        LAYING: 0.9983  #######################################
-    TRANSITION: 0.0012
-```
+
+**Compare arguments:**
+
+| Argument  | Description                                    |
+|-----------|------------------------------------------------|
+| `--plot`  | Generate comparison bar chart (artifacts/comparison.png) |
+
+**Output:** Prints a table comparing test accuracy, parameter count, and training time
+across all trained models. If quantization has been run, also shows FP32 vs INT8
+accuracy comparison. With `--plot`, saves `artifacts/comparison.png`.
 
 ---
 
-## Model Architecture
+## Model Architectures
 
-A minimal 1D-CNN with **305 total parameters** (1.19 KB), designed for direct FPGA translation:
+### 1D-CNN (1dcnn)
+
+A minimal 1D-CNN with **305 total parameters** (1.19 KB), designed for direct FPGA translation.
+Operates on 19 pre-extracted statistical features from the UCI HAR dataset.
 
 ```
 Input (19, 1)
@@ -197,13 +314,12 @@ Input (19, 1)
   v
 Conv1D(filters=12, kernel_size=19, stride=1, padding='valid', activation='relu')
   |  -- output shape: (1, 12)
-  |  -- kernel: [19 x 1 x 12] = 228 weights + 12 biases = 240 params
   v
 Flatten
   |  -- output shape: (12,)
   v
 Dense(units=5, activation='softmax')
-  |  -- kernel: [12 x 5] = 60 weights + 5 biases = 65 params
+  |
   v
 Output (5,)  -->  [WALKING, SITTING, STANDING, LAYING, TRANSITION]
 ```
@@ -216,8 +332,88 @@ Output (5,)  -->  [WALKING, SITTING, STANDING, LAYING, TRANSITION]
 | dense_output | Dense   | (None,5)    | 65         | Softmax    |
 | **Total**    |         |             | **305**    |            |
 
-No pooling layers, no dropout, no batch normalization -- intentionally kept minimal
-so the hardware team can map it directly to RTL/HLS.
+### CNN+LSTM / DCLSTM (cnn_lstm)
+
+Combines CNNs with LSTM networks to leverage spatial and temporal feature extraction.
+Operates on raw inertial signals (128 timesteps x 9 channels).
+
+```
+Input (128, 9)
+  |
+  v
+Conv1D(64, kernel_size=5, padding='same', activation='relu')
+  |  -- output shape: (128, 64)
+  v
+Conv1D(64, kernel_size=5, padding='same', activation='relu')
+  |  -- output shape: (128, 64)
+  v
+Dropout(0.3)
+  |
+  v
+LSTM(128)
+  |  -- output shape: (128,)
+  v
+Dropout(0.3)
+  |
+  v
+Dense(5, activation='softmax')
+  |
+  v
+Output (5,)  -->  [WALKING, SITTING, STANDING, LAYING, TRANSITION]
+```
+
+| Layer        | Type    | Output Shape   | Parameters | Activation        |
+|--------------|---------|---------------|------------|-------------------|
+| input        | Input   | (None,128,9)  | 0          | --                |
+| conv1d_1     | Conv1D  | (None,128,64) | 2,944      | ReLU              |
+| conv1d_2     | Conv1D  | (None,128,64) | 20,544     | ReLU              |
+| dropout_1    | Dropout | (None,128,64) | 0          | --                |
+| lstm         | LSTM    | (None,128)    | 98,816     | tanh/sigmoid      |
+| dropout_2    | Dropout | (None,128)    | 0          | --                |
+| dense_output | Dense   | (None,5)      | 645        | Softmax           |
+| **Total**    |         |               | **122,949**|                   |
+
+### Wavelet CNN+LSTM / WCLSTM (wclstm)
+
+Incorporates wavelet transforms (WTs) to enhance feature extraction by providing
+time-frequency analysis. The raw signals are first decomposed using a Daubechies-4
+wavelet at level 2 before being fed into the CNN+LSTM network.
+
+```
+Raw Signal (128, 9)
+  |
+  v  [Wavelet Decomposition: db4, level=2]
+  |  Concatenates approximation + detail coefficients
+  v
+Input (141, 9)   <-- 141 = concat of wavelet coefficient lengths
+  |
+  v
+Conv1D(64, kernel_size=5, padding='same', activation='relu')
+  |  -- output shape: (141, 64)
+  v
+Conv1D(64, kernel_size=5, padding='same', activation='relu')
+  |  -- output shape: (141, 64)
+  v
+Dropout(0.3)
+  |
+  v
+LSTM(128)
+  |  -- output shape: (128,)
+  v
+Dropout(0.3)
+  |
+  v
+Dense(5, activation='softmax')
+  |
+  v
+Output (5,)
+```
+
+**Wavelet configuration:**
+- Wavelet: Daubechies-4 (`db4`)
+- Decomposition level: 2
+- Output: Concatenation of `[cA2, cD2, cD1]` coefficients per channel
+- 128 timesteps -> 141 wavelet coefficients per channel
 
 ---
 
@@ -228,13 +424,16 @@ so the hardware team can map it directly to RTL/HLS.
 - Source: https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
 - 10,299 samples total (7,352 train + 2,947 test)
 - Raw data: accelerometer + gyroscope from smartphone worn at the waist
-- We use the **pre-extracted 561-feature vectors** provided by the dataset,
-  then select 19 of them.
 
-### Feature Selection
+### Data Modes
 
-19 statistical features selected following the paper's criteria for minimal FPGA compute
-with maximum discriminative power:
+| Model    | Data Mode   | Input Shape   | Description                              |
+|----------|-------------|---------------|------------------------------------------|
+| `1dcnn`  | `features`  | (N, 19)       | 19 selected statistical features         |
+| `cnn_lstm`| `raw`      | (N, 128, 9)   | 9 raw inertial signal channels           |
+| `wclstm` | `wavelet`   | (N, 141, 9)   | Wavelet-decomposed inertial signals      |
+
+**19 statistical features (for 1dcnn):**
 
 | #  | Feature Name             | UCI Index | Category                        |
 |----|--------------------------|----------:|---------------------------------|
@@ -258,11 +457,19 @@ with maximum discriminative power:
 | 18 | tBodyAccJerkMag-std()    | 228       | Body jerk magnitude             |
 | 19 | tBodyGyroMag-mean()      | 253       | Gyroscope magnitude             |
 
-These cover translational dynamics (accelerometer), rotational dynamics (gyroscope),
-jerk (time-derivative of acceleration), and vector magnitudes -- the most
-discriminative signal components for activity recognition.
+**9 raw inertial signal channels (for cnn_lstm and wclstm):**
 
-Full details in `configs/features.json`.
+| #  | Signal Name    | Description                     |
+|----|----------------|---------------------------------|
+| 1  | body_acc_x     | Body acceleration X-axis        |
+| 2  | body_acc_y     | Body acceleration Y-axis        |
+| 3  | body_acc_z     | Body acceleration Z-axis        |
+| 4  | body_gyro_x    | Body gyroscope X-axis           |
+| 5  | body_gyro_y    | Body gyroscope Y-axis           |
+| 6  | body_gyro_z    | Body gyroscope Z-axis           |
+| 7  | total_acc_x    | Total acceleration X-axis       |
+| 8  | total_acc_y    | Total acceleration Y-axis       |
+| 9  | total_acc_z    | Total acceleration Z-axis       |
 
 ### Label Mapping
 
@@ -276,221 +483,111 @@ Original UCI labels are merged into 5 classes:
 | SITTING              | 4           | SITTING     | 1         |
 | STANDING             | 5           | STANDING    | 2         |
 | LAYING               | 6           | LAYING      | 3         |
-| Any other / transition | --        | TRANSITION  | 4         |
-
-Full mapping in `configs/training.json`.
+| Any other            | --          | TRANSITION  | 4         |
 
 ---
 
 ## Preprocessing
 
-**Z-score normalization** is applied to each of the 19 features independently:
+**Z-score normalization** is applied to all input data:
 
 ```
 x_normalized = (x_raw - mean) / std
 ```
 
 - `mean` and `std` are computed from the training set only.
-- Saved to `artifacts/scaler.json` (19 mean values + 19 std values).
+- Saved to `artifacts/<model>/scaler.json`.
 - **The FPGA must apply this same normalization before inference.**
-- After normalization, the 19 values are reshaped from `(19,)` to `(19, 1)` to feed into Conv1D.
+
+For the 1D-CNN:
+- Applied per feature (19 mean + 19 std values).
+- After normalization, reshaped from `(19,)` to `(19, 1)`.
+
+For CNN+LSTM / WCLSTM:
+- Applied across all `timesteps x channels` (flattened, then reshaped back).
+- For WCLSTM, wavelet decomposition is applied before normalization.
 
 ---
 
 ## Artifacts Reference (for Hardware Team)
 
-After training, the `artifacts/` folder contains everything needed for FPGA implementation.
-You can send this entire folder to the hardware team.
+After training, each model's artifacts are in `artifacts/<model_type>/`.
 
 ### model_spec.json
 
-**What:** Complete layer-by-layer architecture specification.
-
-**Contents:**
-- `model_name`: `"har_1dcnn"`
-- `total_params`: `305`
-- `input_shape`: `[null, 19, 1]` (batch, features, channels)
-- `output_shape`: `[null, 5]` (batch, classes)
-- `layers`: Array of layer objects, each containing:
-  - `name`, `type`, `output_shape`, `param_count`
-  - `weight_shapes`: exact dimensions of each weight tensor
-  - `config`: activation function, kernel size, padding, etc.
-
-**Example layer entry (Conv1D):**
-```json
-{
-  "name": "conv1d",
-  "type": "Conv1D",
-  "output_shape": [null, 1, 12],
-  "param_count": 240,
-  "weight_shapes": {
-    "kernel": [19, 1, 12],
-    "bias": [12]
-  },
-  "config": {
-    "filters": 12,
-    "kernel_size": [19],
-    "strides": [1],
-    "padding": "valid",
-    "activation": "relu",
-    "use_bias": true
-  }
-}
-```
+Layer-by-layer architecture specification including shapes, parameter counts,
+activation functions, and kernel configurations.
 
 ### model_weights.mem
 
-**What:** All 305 model weights exported as IEEE-754 float32 hex values, one per line.
-
-**Format:**
-```
-// kernel  shape=(19x1x12)  count=228
-3dd05f49
-3d77ddc6
-be48b8e2
-...
-// bias  shape=(12)  count=12
-3e838bac
-...
-```
-
-- Each value is 8 hex characters = 32-bit IEEE-754 float.
-- Lines starting with `//` are comments (section headers with tensor name and shape).
-- Weight order is row-major (C order), matching `numpy.flatten()`.
-- Compatible with Verilog `$readmemh`.
-
-**Weight layout:**
-1. `conv1d/kernel` -- shape `[19, 1, 12]` -- 228 values
-2. `conv1d/bias` -- shape `[12]` -- 12 values
-3. `dense_output/kernel` -- shape `[12, 5]` -- 60 values
-4. `dense_output/bias` -- shape `[5]` -- 5 values
+All weights as IEEE-754 float32 hex values, one per line.
+Sections separated by `//` comment lines.
+Compatible with Verilog `$readmemh`.
 
 ### scaler.json
 
-**What:** Z-score normalization constants. **Must be applied to raw input before inference.**
-
-**Contents:**
-```json
-{
-  "mean": [0.2745, -0.0177, -0.1091, ...],   // 19 values
-  "std":  [0.0703,  0.0408,  0.0566, ...]    // 19 values
-}
-```
-
-**Usage:** For each feature `i`:
-```
-normalized[i] = (raw[i] - mean[i]) / std[i]
-```
+Z-score normalization constants (mean + std per feature/channel).
 
 ### har_model.keras
 
-**What:** The full saved Keras model (weights + architecture + optimizer state).
-
-**Usage:** Only needed if you want to reload the model in Python for further training,
-fine-tuning, or running inference with `infer.py`. Not needed for FPGA implementation.
+Full saved Keras model for reloading in Python.
 
 ### weights_readable.txt
 
-**What:** Human-readable version of all weights as decimal floats.
-
-Small tensors (like biases) are printed value by value. Large tensors show
-min/max/mean/std summary statistics.
+Human-readable weight dump with min/max/mean/std summaries.
 
 ### training_history.json
 
-**What:** Per-epoch training metrics.
+Per-epoch training metrics (loss, accuracy, val_loss, val_accuracy).
 
-**Contents:** JSON object with keys `loss`, `accuracy`, `val_loss`, `val_accuracy`,
-each mapping to an array of 30 float values (one per epoch).
+### quantization/ (after running quantize)
 
-Useful for plotting learning curves or verifying training convergence.
+Post-training quantization results:
+- `results.json` -- Per-variant accuracy and timing
+- `quantization_results.png` -- Visual comparison
+- `fp16/`, `int16/`, `int8/` -- Quantized weight files
 
 ---
 
 ## Source Code Reference
 
-Each module is self-contained and can be read/translated to C, Verilog, or HLS independently.
-
 | File | Responsibility | Key Functions |
 |------|---------------|---------------|
-| `data.py` | Download UCI HAR, extract, load, select 19 features, remap labels | `load_har_data()`, `remap_labels()` |
+| `data.py` | Download UCI HAR, load features or raw signals, remap labels | `load_har_data()`, `load_har_raw()`, `remap_labels()` |
 | `preprocess.py` | Z-score normalization | `ZScoreScaler.fit()`, `.transform()`, `.save()`, `.load()` |
-| `model.py` | Build Keras model, extract architecture spec | `build_model()`, `extract_model_spec()` |
-| `train.py` | Full training pipeline with CLI | `train()`, `main()` |
+| `model.py` | Build all 3 model architectures, extract spec | `build_model()`, `build_1dcnn()`, `build_cnn_lstm()`, `build_wclstm()`, `extract_model_spec()` |
+| `train.py` | Full training pipeline with `--model` flag | `train()`, `main()` |
 | `export.py` | Export weights to .mem + JSON spec | `export_weights_mem()`, `export_spec_json()` |
 | `infer.py` | Run inference (single/batch/test) | `predict_single()`, `predict_batch()`, `main()` |
+| `quantize.py` | Post-training quantization comparison | `quantize_symmetric()`, `main()` |
+| `compare.py` | Cross-model comparison | `main()` |
 
 ---
 
 ## FPGA Implementation Notes
 
-1. **Total compute per inference:**
-   - Conv1D: 19 multiply-accumulate operations x 12 filters = 228 MACs + 12 bias adds + 12 ReLU
-   - Dense: 12 x 5 = 60 MACs + 5 bias adds + softmax over 5 values
-   - **Total: 288 MACs + 17 additions + 12 ReLU + 1 softmax(5)**
+### 1D-CNN (305 params, 1.19 KB)
 
-2. **Memory requirements:**
-   - 305 weight parameters x 32 bits = 1,220 bytes (fits in BRAM easily)
-   - 19 mean + 19 std values for normalization = 152 bytes
-   - Total: ~1.4 KB
+- **Compute:** 228 MACs (Conv1D) + 60 MACs (Dense) = 288 MACs total
+- **Memory:** 305 x 32 bits = 1,220 bytes
+- **Activations:** ReLU (sign bit check) + Softmax (or argmax)
+- Effectively two fully-connected layers (kernel_size == input_length)
 
-3. **Activations:**
-   - **ReLU:** `y = max(0, x)` -- trivial in hardware (sign bit check)
-   - **Softmax:** `y_i = exp(x_i) / sum(exp(x_j))` -- can use LUT-based exp approximation
-     or skip softmax entirely and just take `argmax` if you only need the predicted class
+### CNN+LSTM (~123K params, ~480 KB)
 
-4. **Fixed-point conversion:**
-   - All weights are provided as float32 in the `.mem` file.
-   - For fixed-point FPGA implementation, quantize weights to Q8.8, Q4.12, or similar
-     format depending on your precision requirements.
-   - Test quantized inference accuracy against the Python model before committing to a
-     bit-width.
+- **Compute:** Significantly more than 1D-CNN due to LSTM recurrence
+- **Conv layers:** Two Conv1D layers with 64 filters each
+- **LSTM:** 128 hidden units, processes 128 timesteps sequentially
+- **Memory:** ~480 KB for FP32 weights (INT8 reduces to ~120 KB)
+- **Note:** LSTM requires sequential processing of timesteps, which may
+  need pipelining or time-multiplexed computation on FPGA
 
-5. **Conv1D with kernel_size=19 on input length 19 with `valid` padding:**
-   - This produces exactly **one** output position per filter.
-   - Each filter computes: `sum(input[0:19] * kernel[0:19]) + bias`, then ReLU.
-   - Effectively equivalent to a fully-connected layer from 19 inputs to 12 outputs.
-   - This simplifies the hardware: no sliding window logic needed.
+### WCLSTM (~123K params, ~480 KB)
 
----
-
-## Inference Pseudocode (for Hardware Translation)
-
-This is the exact computation the FPGA must perform, step by step:
-
-```
-INPUT:  raw[19]          // 19 raw feature values from sensor preprocessing
-OUTPUT: class_id         // integer 0-4
-
-// --- Step 1: Z-score normalization ---
-for i = 0 to 18:
-    x[i] = (raw[i] - scaler_mean[i]) / scaler_std[i]
-
-// --- Step 2: Conv1D (kernel=19, filters=12, valid, ReLU) ---
-// Since kernel_size == input_length, there is exactly 1 output position.
-// conv_kernel shape: [19][1][12], conv_bias shape: [12]
-for f = 0 to 11:
-    conv_out[f] = conv_bias[f]
-    for i = 0 to 18:
-        conv_out[f] += x[i] * conv_kernel[i][0][f]
-    conv_out[f] = max(0, conv_out[f])    // ReLU
-
-// --- Step 3: Flatten ---
-// conv_out is already flat: shape (12,)
-
-// --- Step 4: Dense output (12 -> 5, softmax) ---
-// dense_kernel shape: [12][5], dense_bias shape: [5]
-for c = 0 to 4:
-    logit[c] = dense_bias[c]
-    for f = 0 to 11:
-        logit[c] += conv_out[f] * dense_kernel[f][c]
-
-// --- Step 5: Argmax (skip softmax if you only need the class) ---
-class_id = index of max(logit[0..4])
-
-// --- Class mapping ---
-// 0 = WALKING, 1 = SITTING, 2 = STANDING, 3 = LAYING, 4 = TRANSITION
-```
+- Same network architecture as CNN+LSTM
+- Requires wavelet decomposition preprocessing on FPGA
+- Wavelet: db4 (Daubechies-4), level 2
+- May achieve higher accuracy with same compute budget
 
 ---
 
@@ -498,23 +595,65 @@ class_id = index of max(logit[0..4])
 
 All hyperparameters are in `configs/training.json`:
 
-| Parameter        | Value                          |
-|------------------|--------------------------------|
-| Epochs           | 30                             |
-| Batch Size       | 64                             |
-| Learning Rate    | 0.001                          |
-| Optimizer        | Adam                           |
-| Loss Function    | Sparse Categorical Crossentropy|
-| Validation Split | 20%                            |
-| Random Seed      | 42                             |
+| Parameter        | Value                          | Applies To  |
+|------------------|--------------------------------|-------------|
+| Epochs           | 30                             | All models  |
+| Batch Size       | 64                             | All models  |
+| Learning Rate    | 0.001                          | All models  |
+| Optimizer        | Adam                           | All models  |
+| Loss Function    | Sparse Categorical Crossentropy| All models  |
+| Validation Split | 20%                            | All models  |
+| Random Seed      | 42                             | All models  |
+
+Per-model config (conv filters, kernel sizes, LSTM units, dropout, wavelet params)
+is in `configs/training.json` under `models.<model_type>`.
+
+---
+
+## Results
+
+### Test Accuracy (UCI HAR Test Set, 2,947 samples)
+
+| Model      | Test Accuracy | Parameters | FP32 Weight Size | Input Shape |
+|------------|--------------|------------|------------------|-------------|
+| **1D-CNN** | **92.67%**   | 305        | 1,220 B          | (19, 1)     |
+| **CNN+LSTM** | **93.59%** | 122,949    | 491,796 B        | (128, 9)    |
+| **WCLSTM** | **83.00%**   | 122,949    | 491,796 B        | (141, 9)    |
+
+### Per-Class Accuracy
+
+| Class     | 1D-CNN  | CNN+LSTM | WCLSTM  |
+|-----------|---------|----------|---------|
+| WALKING   | 100.00% | 99.86%   | 100.00% |
+| SITTING   | 75.56%  | 86.35%   | 90.43%  |
+| STANDING  | 87.03%  | 77.44%   | 14.85%  |
+| LAYING    | 94.97%  | 100.00%  | 99.81%  |
+
+### Quantization Results (FP32 vs INT8)
+
+All models maintain accuracy through FP16 and INT16 quantization with zero degradation.
+INT8 results:
+
+| Model      | FP32 Acc | INT8 Acc | Acc Drop | FP32 Size  | INT8 Size  | Compression |
+|------------|----------|----------|----------|------------|------------|-------------|
+| **1D-CNN** | 92.67%   | 92.67%   | 0.00%    | 1,220 B    | 305 B      | 4x          |
+| **CNN+LSTM** | 93.59% | 93.59%   | 0.00%    | 491,796 B  | 122,949 B  | 4x          |
+| **WCLSTM** | 83.00%   | 82.69%   | 0.31%    | 491,796 B  | 122,949 B  | 4x          |
+
+### Notes
+
+- **CNN+LSTM achieves the best accuracy (93.59%)** among the three models on the UCI HAR test set with 5-class labels (WALKING, SITTING, STANDING, LAYING, TRANSITION).
+- **1D-CNN is remarkably efficient** at 92.67% with only 305 parameters (1.19 KB), making it ideal for resource-constrained FPGA deployment.
+- **WCLSTM underperforms expectations** at 83.00% vs the paper's reported 98.9%. The gap is likely due to: (a) our 5-class label merge vs the paper's original 6-class setup, (b) the 30-epoch training budget, and (c) possible differences in wavelet preprocessing. Additional tuning (more epochs, learning rate scheduling) may improve this.
+- All three models show **excellent quantization robustness** -- INT8 quantization preserves accuracy with 4x weight compression, which is important for FPGA deployment with limited on-chip memory.
 
 ---
 
 ## GPU Support
 
 TensorFlow on native Windows dropped GPU support after v2.10. The installed `tensorflow==2.18`
-runs on CPU only on Windows. Since the model has only 305 parameters, CPU training completes
-in ~10 seconds -- GPU would provide no meaningful speedup for this model size.
+runs on CPU only on Windows.
 
-If GPU training is needed for experimentation with larger models, use WSL2 with
-`tensorflow[and-cuda]`.
+- **1D-CNN:** ~305 params, trains in ~10s on CPU. GPU not needed.
+- **CNN+LSTM / WCLSTM:** ~123K params, trains in ~2-5 minutes on CPU.
+  For faster training, use WSL2 with `tensorflow[and-cuda]`.

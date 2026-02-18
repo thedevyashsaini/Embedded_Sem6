@@ -1,4 +1,4 @@
-// HAR 1D-CNN  FP16 quantized weights
+// HAR Model  FP16 quantized weights
 
 // conv1d/kernel  shape=(19x1x12)  count=228
 2e83

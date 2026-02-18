@@ -1,21 +1,25 @@
 """
-quantize.py -- Post-training weight quantization comparison for the HAR 1D-CNN.
+quantize.py -- Post-training weight quantization comparison for HAR models.
+
+Supports all three architectures: 1dcnn, cnn_lstm, wclstm.
 
 Quantizes the trained FP32 weights to several reduced-precision formats,
 runs inference on the UCI HAR test split with each variant, and produces:
 
-  artifacts/quantization/
-      results.json          -- accuracy, inference time, weight sizes per variant
+  artifacts/<model_type>/quantization/
+      results.json              -- accuracy, inference time, weight sizes per variant
       quantization_results.png  -- comparison bar charts
-      fp16/                 -- FP16 weights (.mem + metadata.json)
-      int16/                -- INT16 weights (.mem + metadata.json)
-      int8/                 -- INT8  weights (.mem + metadata.json)
+      fp16/                     -- FP16 weights (.mem + metadata.json)
+      int16/                    -- INT16 weights (.mem + metadata.json)
+      int8/                     -- INT8  weights (.mem + metadata.json)
 
 No retraining is performed. Weights are quantized post-training using
 symmetric min-max scaling for integer formats.
 
 Usage:
-    uv run python -m har_fpga.quantize
+    uv run python -m har_fpga.quantize --model 1dcnn
+    uv run python -m har_fpga.quantize --model cnn_lstm
+    uv run python -m har_fpga.quantize --model wclstm
 """
 
 from __future__ import annotations
@@ -30,17 +34,50 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from har_fpga.data import load_har_data
+from har_fpga.data import load_har_data, load_har_raw
+from har_fpga.model import MODEL_TYPES
 from har_fpga.preprocess import ZScoreScaler
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ARTIFACT_DIR = PROJECT_ROOT / "artifacts"
-QUANT_DIR = ARTIFACT_DIR / "quantization"
 CONFIG_DIR = PROJECT_ROOT / "configs"
 
 # Number of inference timing runs (after warmup)
 TIMING_RUNS = 10
 WARMUP_RUNS = 3
+
+
+def _artifact_dir(model_type: str) -> Path:
+    return PROJECT_ROOT / "artifacts" / model_type
+
+
+def _load_training_config() -> dict:
+    with open(CONFIG_DIR / "training.json", "r") as f:
+        return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Wavelet transform (reused from train.py)
+# ---------------------------------------------------------------------------
+def _apply_wavelet_transform(
+    X: np.ndarray,
+    wavelet: str = "db4",
+    level: int = 2,
+) -> np.ndarray:
+    """Apply wavelet decomposition to raw inertial signals."""
+    import pywt
+
+    N, T, C = X.shape
+    sample_signal = X[0, :, 0]
+    coeffs = pywt.wavedec(sample_signal, wavelet, level=level)
+    concat_sample = np.concatenate(coeffs)
+    T_wt = len(concat_sample)
+
+    X_wt = np.empty((N, T_wt, C), dtype=np.float32)
+    for i in range(N):
+        for ch in range(C):
+            coeffs = pywt.wavedec(X[i, :, ch], wavelet, level=level)
+            X_wt[i, :, ch] = np.concatenate(coeffs)
+    return X_wt
 
 
 # ---------------------------------------------------------------------------
@@ -75,12 +112,9 @@ def quantize_symmetric(arr: np.ndarray, n_bits: int) -> tuple[np.ndarray, float]
     Returns (quantized_int_array, scale) where:
         quantized = round(arr / scale)
         dequantized = quantized * scale
-
-    Scale is chosen so the full range [-2^(n-1)+1, 2^(n-1)-1] covers
-    [min(arr), max(arr)].
     """
-    qmin = -(2 ** (n_bits - 1)) + 1  # e.g. -127 for int8
-    qmax = 2 ** (n_bits - 1) - 1  # e.g.  127 for int8
+    qmin = -(2 ** (n_bits - 1)) + 1
+    qmax = 2 ** (n_bits - 1) - 1
 
     abs_max = max(abs(arr.min()), abs(arr.max()))
     if abs_max == 0:
@@ -103,7 +137,7 @@ def _write_mem_fp16(weights_dict: dict[str, np.ndarray], out_dir: Path) -> dict:
     """Convert all weights to FP16, write .mem, return metadata."""
     out_dir.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
-    lines.append("// HAR 1D-CNN  FP16 quantized weights")
+    lines.append("// HAR Model  FP16 quantized weights")
     lines.append("")
     metadata: dict = {"dtype": "float16", "layers": {}}
 
@@ -140,7 +174,7 @@ def _write_mem_int(
     label = f"int{n_bits}"
 
     lines: list[str] = []
-    lines.append(f"// HAR 1D-CNN  {label.upper()} quantized weights (symmetric)")
+    lines.append(f"// HAR Model  {label.upper()} quantized weights (symmetric)")
     lines.append("")
     metadata: dict = {"dtype": label, "layers": {}}
 
@@ -197,11 +231,7 @@ def _build_quantized_weights(
     original: dict[str, np.ndarray],
     variant: str,
 ) -> dict[str, np.ndarray]:
-    """Return a dict of dequantized (back to fp32) weights for a given variant.
-
-    This simulates what the FPGA would compute: store quantized, but
-    arithmetic still happens in float for the Keras forward pass.
-    """
+    """Return a dict of dequantized (back to fp32) weights for a given variant."""
     result: dict[str, np.ndarray] = {}
     for name, arr in original.items():
         if variant == "fp32":
@@ -226,10 +256,7 @@ def _timed_inference(
     model: keras.Model,
     X: np.ndarray,
 ) -> tuple[np.ndarray, float]:
-    """Run inference, return (predictions, avg_time_seconds).
-
-    Does WARMUP_RUNS warm-up passes, then times TIMING_RUNS passes.
-    """
+    """Run inference, return (predictions, avg_time_seconds)."""
     for _ in range(WARMUP_RUNS):
         model.predict(X, verbose=0)
 
@@ -257,7 +284,7 @@ def _weight_size_bytes(weights_dict: dict[str, np.ndarray], variant: str) -> int
 # ---------------------------------------------------------------------------
 # Plotting
 # ---------------------------------------------------------------------------
-def _generate_plots(results: list[dict], out_path: Path) -> None:
+def _generate_plots(results: list[dict], model_type: str, out_path: Path) -> None:
     """Generate comparison bar charts."""
     import matplotlib
 
@@ -272,8 +299,11 @@ def _generate_plots(results: list[dict], out_path: Path) -> None:
     colors = ["#2196F3", "#4CAF50", "#FF9800", "#F44336"]
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+    total_params = results[0].get("total_params", "?")
     fig.suptitle(
-        "Post-Training Weight Quantization Comparison\nHAR 1D-CNN (305 parameters)",
+        f"Post-Training Weight Quantization Comparison\n"
+        f"HAR {model_type.upper()} ({total_params} parameters)",
         fontsize=14,
         fontweight="bold",
     )
@@ -339,38 +369,73 @@ def _generate_plots(results: list[dict], out_path: Path) -> None:
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Post-training weight quantization comparison for HAR 1D-CNN."
+        description="Post-training weight quantization comparison for HAR models."
     )
     parser.add_argument(
         "--model",
         type=str,
-        default=str(ARTIFACT_DIR / "har_model.keras"),
-        help="Path to trained Keras model (default: artifacts/har_model.keras)",
+        default="1dcnn",
+        choices=list(MODEL_TYPES),
+        help="Model architecture (default: 1dcnn)",
+    )
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        default=None,
+        help="Path to trained Keras model (overrides default)",
     )
     args = parser.parse_args()
 
-    model_path = Path(args.model)
+    model_type = args.model
+    adir = _artifact_dir(model_type)
+    quant_dir = adir / "quantization"
+
+    model_path = Path(args.model_path) if args.model_path else adir / "har_model.keras"
     if not model_path.exists():
         print(f"[quantize] ERROR: Model not found at {model_path}")
-        print("           Train first: uv run python -m har_fpga.train")
+        print(
+            f"           Train first: uv run python -m har_fpga.train --model {model_type}"
+        )
         raise SystemExit(1)
 
-    scaler_path = ARTIFACT_DIR / "scaler.json"
+    scaler_path = adir / "scaler.json"
     if not scaler_path.exists():
         print(f"[quantize] ERROR: Scaler not found at {scaler_path}")
         raise SystemExit(1)
 
+    # ---- Load config ----
+    cfg = _load_training_config()
+    model_cfg = cfg["models"][model_type]
+    data_mode = model_cfg.get("data_mode", "features")
+    class_names = cfg["class_names"]
+
     # ---- Load model, scaler, data ----
+    print(f"[quantize] Model type: {model_type.upper()}")
     print(f"[quantize] Loading model from {model_path} ...")
     model = keras.models.load_model(model_path)
     scaler = ZScoreScaler.load(scaler_path)
 
     print("[quantize] Loading test data ...")
-    _, _, X_test_raw, y_test, _, class_names = load_har_data(download=True)
+    if data_mode == "features":
+        _, _, X_test_raw, y_test, _, _ = load_har_data(download=True)
+    else:
+        _, _, X_test_raw, y_test, _, _ = load_har_raw(download=True)
+
+    # Wavelet transform for WCLSTM
+    if data_mode == "wavelet":
+        wavelet = model_cfg.get("wavelet", "db4")
+        level = model_cfg.get("wavelet_level", 2)
+        X_test_raw = _apply_wavelet_transform(X_test_raw, wavelet=wavelet, level=level)
 
     # Preprocess: z-score + reshape
-    X_test = scaler.transform(X_test_raw)
-    X_test = X_test[..., np.newaxis]  # (N, 19, 1)
+    if X_test_raw.ndim == 3:
+        N, T, C = X_test_raw.shape
+        X_2d = X_test_raw.reshape(N, T * C)
+        X_2d = scaler.transform(X_2d)
+        X_test = X_2d.reshape(N, T, C)
+    else:
+        X_test = scaler.transform(X_test_raw)
+        X_test = X_test[..., np.newaxis]  # (N, 19, 1)
 
     print(f"[quantize] Test samples: {X_test.shape[0]}")
     print(f"[quantize] Total model parameters: {model.count_params()}")
@@ -383,11 +448,11 @@ def main() -> None:
     variants = ["fp32", "fp16", "int16", "int8"]
     results: list[dict] = []
 
-    QUANT_DIR.mkdir(parents=True, exist_ok=True)
+    quant_dir.mkdir(parents=True, exist_ok=True)
 
     for variant in variants:
         print(f"{'=' * 60}")
-        print(f"  Variant: {variant.upper()}")
+        print(f"  Model: {model_type.upper()}  |  Variant: {variant.upper()}")
         print(f"{'=' * 60}")
 
         # Build quantized (then dequantized-to-fp32) weights
@@ -429,32 +494,33 @@ def main() -> None:
             "inference_time_s": avg_time,
             "weight_size_bytes": weight_size,
             "per_class_accuracy": per_class,
+            "total_params": int(model.count_params()),
         }
         results.append(result)
 
         # Export .mem files for non-baseline variants
         if variant == "fp16":
-            _write_mem_fp16(original_weights, QUANT_DIR / "fp16")
+            _write_mem_fp16(original_weights, quant_dir / "fp16")
         elif variant in ("int16", "int8"):
             n_bits = int(variant.replace("int", ""))
-            _write_mem_int(original_weights, n_bits, QUANT_DIR / variant)
+            _write_mem_int(original_weights, n_bits, quant_dir / variant)
 
     # ---- Restore original weights ----
     _set_weights_from_dict(model, original_weights)
 
     # ---- Save results JSON ----
-    results_path = QUANT_DIR / "results.json"
+    results_path = quant_dir / "results.json"
     with open(results_path, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump({"model_type": model_type, "results": results}, f, indent=2)
     print(f"[quantize] Results saved to {results_path}")
 
     # ---- Generate comparison plot ----
-    _generate_plots(results, QUANT_DIR / "quantization_results.png")
+    _generate_plots(results, model_type, quant_dir / "quantization_results.png")
 
     # ---- Print summary table ----
     print()
     print(f"{'=' * 70}")
-    print(f"  QUANTIZATION COMPARISON SUMMARY")
+    print(f"  QUANTIZATION COMPARISON SUMMARY — {model_type.upper()}")
     print(f"{'=' * 70}")
     print(
         f"  {'Variant':<10} {'Accuracy':>10} {'Time (ms)':>12} {'Size (B)':>10} {'Acc Drop':>10}"
@@ -474,11 +540,11 @@ def main() -> None:
 
     print(f"{'=' * 70}")
     print()
-    print("[quantize] Output files:")
-    for p in sorted(QUANT_DIR.rglob("*")):
+    print(f"[quantize] Output files in {quant_dir}:")
+    for p in sorted(quant_dir.rglob("*")):
         if p.is_file():
             size_kb = p.stat().st_size / 1024
-            rel = p.relative_to(ARTIFACT_DIR)
+            rel = p.relative_to(adir)
             print(f"  {str(rel):50s} {size_kb:8.1f} KB")
     print()
     print("[quantize] Done.")

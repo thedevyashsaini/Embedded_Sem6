@@ -1,0 +1,75 @@
+{
+  "dtype": "int16",
+  "layers": {
+    "conv1d_1/kernel": {
+      "shape": [
+        5,
+        9,
+        64
+      ],
+      "count": 2880,
+      "scale": 9.779150908665708e-06
+    },
+    "conv1d_1/bias": {
+      "shape": [
+        64
+      ],
+      "count": 64,
+      "scale": 3.939438270766527e-06
+    },
+    "conv1d_2/kernel": {
+      "shape": [
+        5,
+        64,
+        64
+      ],
+      "count": 20480,
+      "scale": 1.723821371203467e-05
+    },
+    "conv1d_2/bias": {
+      "shape": [
+        64
+      ],
+      "count": 64,
+      "scale": 2.39849598999226e-06
+    },
+    "lstm/kernel": {
+      "shape": [
+        64,
+        512
+      ],
+      "count": 32768,
+      "scale": 2.2283134692704872e-05
+    },
+    "lstm/recurrent_kernel": {
+      "shape": [
+        128,
+        512
+      ],
+      "count": 65536,
+      "scale": 8.79459193814651e-06
+    },
+    "lstm/bias": {
+      "shape": [
+        512
+      ],
+      "count": 512,
+      "scale": 3.374162059200328e-05
+    },
+    "dense_output/kernel": {
+      "shape": [
+        128,
+        5
+      ],
+      "count": 640,
+      "scale": 1.489812975549449e-05
+    },
+    "dense_output/bias": {
+      "shape": [
+        5
+      ],
+      "count": 5,
+      "scale": 1.7904332725915954e-06
+    }
+  }
+}

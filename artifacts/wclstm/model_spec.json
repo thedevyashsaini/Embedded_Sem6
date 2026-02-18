@@ -1,0 +1,170 @@
+{
+  "model_name": "har_wclstm",
+  "total_params": 122949,
+  "input_shape": [
+    null,
+    141,
+    9
+  ],
+  "output_shape": [
+    null,
+    5
+  ],
+  "layers": [
+    {
+      "name": "input",
+      "type": "InputLayer",
+      "output_shape": [
+        null,
+        141,
+        9
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {}
+    },
+    {
+      "name": "conv1d_1",
+      "type": "Conv1D",
+      "output_shape": [
+        null,
+        141,
+        64
+      ],
+      "param_count": 2944,
+      "weight_shapes": {
+        "kernel": [
+          5,
+          9,
+          64
+        ],
+        "bias": [
+          64
+        ]
+      },
+      "config": {
+        "filters": 64,
+        "kernel_size": [
+          5
+        ],
+        "strides": [
+          1
+        ],
+        "padding": "same",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "conv1d_2",
+      "type": "Conv1D",
+      "output_shape": [
+        null,
+        141,
+        64
+      ],
+      "param_count": 20544,
+      "weight_shapes": {
+        "kernel": [
+          5,
+          64,
+          64
+        ],
+        "bias": [
+          64
+        ]
+      },
+      "config": {
+        "filters": 64,
+        "kernel_size": [
+          5
+        ],
+        "strides": [
+          1
+        ],
+        "padding": "same",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "dropout_1",
+      "type": "Dropout",
+      "output_shape": [
+        null,
+        141,
+        64
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "rate": 0.3
+      }
+    },
+    {
+      "name": "lstm",
+      "type": "LSTM",
+      "output_shape": [
+        null,
+        128
+      ],
+      "param_count": 98816,
+      "weight_shapes": {
+        "kernel": [
+          64,
+          512
+        ],
+        "recurrent_kernel": [
+          128,
+          512
+        ],
+        "bias": [
+          512
+        ]
+      },
+      "config": {
+        "units": 128,
+        "activation": "tanh",
+        "recurrent_activation": "sigmoid",
+        "use_bias": true,
+        "return_sequences": false
+      }
+    },
+    {
+      "name": "dropout_2",
+      "type": "Dropout",
+      "output_shape": [
+        null,
+        128
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "rate": 0.3
+      }
+    },
+    {
+      "name": "dense_output",
+      "type": "Dense",
+      "output_shape": [
+        null,
+        5
+      ],
+      "param_count": 645,
+      "weight_shapes": {
+        "kernel": [
+          128,
+          5
+        ],
+        "bias": [
+          5
+        ]
+      },
+      "config": {
+        "units": 5,
+        "activation": "softmax",
+        "use_bias": true
+      }
+    }
+  ]
+}

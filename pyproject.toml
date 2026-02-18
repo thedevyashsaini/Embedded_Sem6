@@ -10,13 +10,15 @@ dependencies = [
     "scikit-learn>=1.3",
     "requests>=2.31",
     "matplotlib>=3.7",
+    "PyWavelets>=1.4",
 ]
 
 [project.scripts]
-har-train   = "har_fpga.train:main"
-har-infer   = "har_fpga.infer:main"
-har-export    = "har_fpga.export:main"
-har-quantize  = "har_fpga.quantize:main"
+har-train    = "har_fpga.train:main"
+har-infer    = "har_fpga.infer:main"
+har-export   = "har_fpga.export:main"
+har-quantize = "har_fpga.quantize:main"
+har-compare  = "har_fpga.compare:main"
 
 [build-system]
 requires = ["hatchling"]
