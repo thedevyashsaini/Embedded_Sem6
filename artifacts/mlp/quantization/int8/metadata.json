@@ -1,0 +1,50 @@
+{
+  "dtype": "int8",
+  "layers": {
+    "dense_1/kernel": {
+      "shape": [
+        19,
+        64
+      ],
+      "count": 1216,
+      "scale": 0.006433535748579371
+    },
+    "dense_1/bias": {
+      "shape": [
+        64
+      ],
+      "count": 64,
+      "scale": 0.0022924446214841105
+    },
+    "dense_2/kernel": {
+      "shape": [
+        64,
+        32
+      ],
+      "count": 2048,
+      "scale": 0.005449173488016204
+    },
+    "dense_2/bias": {
+      "shape": [
+        32
+      ],
+      "count": 32,
+      "scale": 0.0015269810055184552
+    },
+    "dense_output/kernel": {
+      "shape": [
+        32,
+        5
+      ],
+      "count": 160,
+      "scale": 0.0068631674361041214
+    },
+    "dense_output/bias": {
+      "shape": [
+        5
+      ],
+      "count": 5,
+      "scale": 0.001753056260544484
+    }
+  }
+}

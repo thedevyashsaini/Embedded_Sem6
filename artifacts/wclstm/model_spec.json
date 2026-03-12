@@ -166,5 +166,37 @@
         "use_bias": true
       }
     }
-  ]
+  ],
+  "training_info": {
+    "epochs": 30,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "final_train_accuracy": 0.9539194107055664,
+    "final_test_accuracy": 0.9450288414955139,
+    "final_test_loss": 0.15757618844509125,
+    "training_time_seconds": 344.8,
+    "data_mode": "wavelet",
+    "feature_names": [
+      "body_acc_x",
+      "body_acc_y",
+      "body_acc_z",
+      "body_gyro_x",
+      "body_gyro_y",
+      "body_gyro_z",
+      "total_acc_x",
+      "total_acc_y",
+      "total_acc_z"
+    ],
+    "class_names": [
+      "WALKING",
+      "SITTING",
+      "STANDING",
+      "LAYING",
+      "TRANSITION"
+    ],
+    "num_classes": 5,
+    "wavelet": "db4",
+    "wavelet_level": 2,
+    "wavelet_output_timesteps": 141
+  }
 }

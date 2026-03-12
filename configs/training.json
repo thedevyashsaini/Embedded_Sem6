@@ -9,6 +9,17 @@
     "loss": "sparse_categorical_crossentropy",
 
     "models": {
+        "mlp": {
+            "_comment": "Multi-Layer Perceptron on 19 pre-extracted features.",
+            "data_mode": "features",
+            "input_length": 19,
+            "hidden1_units": 64,
+            "hidden2_units": 32,
+            "hidden_activation": "relu",
+            "dropout_rate": 0.3,
+            "num_classes": 5,
+            "output_activation": "softmax"
+        },
         "1dcnn": {
             "_comment": "Lightweight 1D-CNN on 19 pre-extracted features.",
             "data_mode": "features",

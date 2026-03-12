@@ -3,13 +3,13 @@
   "results": [
     {
       "variant": "fp32",
-      "accuracy": 0.9358669833729216,
-      "inference_time_s": 2.41781312000021,
+      "accuracy": 0.9440108585001696,
+      "inference_time_s": 2.3265135999999984,
       "weight_size_bytes": 491796,
       "per_class_accuracy": {
-        "WALKING": 0.9985580389329488,
-        "SITTING": 0.8635437881873728,
-        "STANDING": 0.7744360902255639,
+        "WALKING": 0.9992790194664743,
+        "SITTING": 0.8268839103869654,
+        "STANDING": 0.8515037593984962,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
@@ -17,13 +17,13 @@
     },
     {
       "variant": "fp16",
-      "accuracy": 0.9358669833729216,
-      "inference_time_s": 2.4292390700007673,
+      "accuracy": 0.9440108585001696,
+      "inference_time_s": 2.2959846499996273,
       "weight_size_bytes": 245898,
       "per_class_accuracy": {
-        "WALKING": 0.9985580389329488,
-        "SITTING": 0.8635437881873728,
-        "STANDING": 0.7744360902255639,
+        "WALKING": 0.9992790194664743,
+        "SITTING": 0.8268839103869654,
+        "STANDING": 0.8515037593984962,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
@@ -31,13 +31,13 @@
     },
     {
       "variant": "int16",
-      "accuracy": 0.9358669833729216,
-      "inference_time_s": 2.5475643600002513,
+      "accuracy": 0.9440108585001696,
+      "inference_time_s": 2.29936755000017,
       "weight_size_bytes": 245898,
       "per_class_accuracy": {
-        "WALKING": 0.9985580389329488,
-        "SITTING": 0.8635437881873728,
-        "STANDING": 0.7744360902255639,
+        "WALKING": 0.9992790194664743,
+        "SITTING": 0.8268839103869654,
+        "STANDING": 0.8515037593984962,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
@@ -45,13 +45,13 @@
     },
     {
       "variant": "int8",
-      "accuracy": 0.9358669833729216,
-      "inference_time_s": 1.8015402100005304,
+      "accuracy": 0.9433322022395657,
+      "inference_time_s": 2.316553609999937,
       "weight_size_bytes": 122949,
       "per_class_accuracy": {
-        "WALKING": 0.9985580389329488,
-        "SITTING": 0.8635437881873728,
-        "STANDING": 0.7744360902255639,
+        "WALKING": 0.9992790194664743,
+        "SITTING": 0.8289205702647657,
+        "STANDING": 0.8458646616541353,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },

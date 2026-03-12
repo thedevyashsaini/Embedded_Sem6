@@ -11,6 +11,8 @@ dependencies = [
     "requests>=2.31",
     "matplotlib>=3.7",
     "PyWavelets>=1.4",
+    "streamlit>=1.30",
+    "plotly>=5.18",
 ]
 
 [project.scripts]

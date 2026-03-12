@@ -79,7 +79,7 @@ def _generate_comparison_plot(all_results: dict[str, dict], out_path: Path) -> N
         params.append(all_results[mt].get("total_params", 0))
         times.append(info.get("training_time_seconds", 0))
 
-    colors = ["#2196F3", "#4CAF50", "#FF9800"][: len(models)]
+    colors = ["#2196F3", "#4CAF50", "#FF9800", "#E91E63"][: len(models)]
     x_labels = [m.upper() for m in models]
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))

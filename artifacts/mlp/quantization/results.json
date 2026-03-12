@@ -1,0 +1,61 @@
+{
+  "model_type": "mlp",
+  "results": [
+    {
+      "variant": "fp32",
+      "accuracy": 0.9348489989820156,
+      "inference_time_s": 0.1340567600000213,
+      "weight_size_bytes": 14100,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.7576374745417516,
+        "STANDING": 0.8627819548872181,
+        "LAYING": 1.0,
+        "TRANSITION": 0.0
+      },
+      "total_params": 3525
+    },
+    {
+      "variant": "fp16",
+      "accuracy": 0.9348489989820156,
+      "inference_time_s": 0.15124055999967823,
+      "weight_size_bytes": 7050,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.7576374745417516,
+        "STANDING": 0.8627819548872181,
+        "LAYING": 1.0,
+        "TRANSITION": 0.0
+      },
+      "total_params": 3525
+    },
+    {
+      "variant": "int16",
+      "accuracy": 0.9348489989820156,
+      "inference_time_s": 0.14039132999969298,
+      "weight_size_bytes": 7050,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.7576374745417516,
+        "STANDING": 0.8627819548872181,
+        "LAYING": 1.0,
+        "TRANSITION": 0.0
+      },
+      "total_params": 3525
+    },
+    {
+      "variant": "int8",
+      "accuracy": 0.9348489989820156,
+      "inference_time_s": 0.12646333999982745,
+      "weight_size_bytes": 3525,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.7576374745417516,
+        "STANDING": 0.8627819548872181,
+        "LAYING": 1.0,
+        "TRANSITION": 0.0
+      },
+      "total_params": 3525
+    }
+  ]
+}

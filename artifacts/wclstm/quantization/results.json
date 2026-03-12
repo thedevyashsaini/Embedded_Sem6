@@ -3,13 +3,13 @@
   "results": [
     {
       "variant": "fp32",
-      "accuracy": 0.829996606718697,
-      "inference_time_s": 2.6221531600000163,
+      "accuracy": 0.9450288428910757,
+      "inference_time_s": 2.532777300000089,
       "weight_size_bytes": 491796,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.9042769857433809,
-        "STANDING": 0.14849624060150377,
+        "SITTING": 0.8778004073319755,
+        "STANDING": 0.8101503759398496,
         "LAYING": 0.9981378026070763,
         "TRANSITION": 0.0
       },
@@ -17,13 +17,13 @@
     },
     {
       "variant": "fp16",
-      "accuracy": 0.829996606718697,
-      "inference_time_s": 2.6387738400007947,
+      "accuracy": 0.9450288428910757,
+      "inference_time_s": 2.4981644499999676,
       "weight_size_bytes": 245898,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.9042769857433809,
-        "STANDING": 0.14849624060150377,
+        "SITTING": 0.8778004073319755,
+        "STANDING": 0.8101503759398496,
         "LAYING": 0.9981378026070763,
         "TRANSITION": 0.0
       },
@@ -31,13 +31,13 @@
     },
     {
       "variant": "int16",
-      "accuracy": 0.829996606718697,
-      "inference_time_s": 2.5254952100010994,
+      "accuracy": 0.9450288428910757,
+      "inference_time_s": 2.6117351199996848,
       "weight_size_bytes": 245898,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.9042769857433809,
-        "STANDING": 0.14849624060150377,
+        "SITTING": 0.8778004073319755,
+        "STANDING": 0.8101503759398496,
         "LAYING": 0.9981378026070763,
         "TRANSITION": 0.0
       },
@@ -45,13 +45,13 @@
     },
     {
       "variant": "int8",
-      "accuracy": 0.826942653545979,
-      "inference_time_s": 1.9862745200000063,
+      "accuracy": 0.9450288428910757,
+      "inference_time_s": 2.663311240000257,
       "weight_size_bytes": 122949,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.9164969450101833,
-        "STANDING": 0.12030075187969924,
+        "SITTING": 0.8778004073319755,
+        "STANDING": 0.8101503759398496,
         "LAYING": 0.9981378026070763,
         "TRANSITION": 0.0
       },

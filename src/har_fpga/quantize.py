@@ -1,7 +1,7 @@
 """
 quantize.py -- Post-training weight quantization comparison for HAR models.
 
-Supports all three architectures: 1dcnn, cnn_lstm, wclstm.
+Supports all architectures: mlp, 1dcnn, cnn_lstm, wclstm.
 
 Quantizes the trained FP32 weights to several reduced-precision formats,
 runs inference on the UCI HAR test split with each variant, and produces:
@@ -435,7 +435,9 @@ def main() -> None:
         X_test = X_2d.reshape(N, T, C)
     else:
         X_test = scaler.transform(X_test_raw)
-        X_test = X_test[..., np.newaxis]  # (N, 19, 1)
+        if model_type == "1dcnn":
+            X_test = X_test[..., np.newaxis]  # (N, 19, 1)
+        # MLP keeps flat (N, 19) shape
 
     print(f"[quantize] Test samples: {X_test.shape[0]}")
     print(f"[quantize] Total model parameters: {model.count_params()}")

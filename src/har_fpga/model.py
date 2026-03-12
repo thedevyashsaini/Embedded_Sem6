@@ -1,7 +1,11 @@
 """
-model.py — Build models for HAR: 1D-CNN, CNN+LSTM (DCLSTM), and WCLSTM.
+model.py — Build models for HAR: MLP, 1D-CNN, CNN+LSTM (DCLSTM), and WCLSTM.
 
 Supported architectures (selected via `model_type` argument):
+
+  mlp      — Multi-Layer Perceptron on 19 pre-extracted features.
+             Dense(64, relu) -> Dropout(0.3) -> Dense(32, relu)
+             -> Dropout(0.3) -> Dense(5, softmax)
 
   1dcnn    — Lightweight 1D-CNN (19 features, 305 params).
              Conv1D(12, k=19, valid, relu) -> Flatten -> Dense(5, softmax)
@@ -30,7 +34,53 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 # Valid model type identifiers
-MODEL_TYPES = ("1dcnn", "cnn_lstm", "wclstm")
+MODEL_TYPES = ("mlp", "1dcnn", "cnn_lstm", "wclstm")
+
+
+# ---------------------------------------------------------------------------
+# MLP (Multi-Layer Perceptron)
+# ---------------------------------------------------------------------------
+def build_mlp(
+    input_length: int = 19,
+    hidden1_units: int = 64,
+    hidden2_units: int = 32,
+    hidden_activation: str = "relu",
+    dropout_rate: float = 0.3,
+    num_classes: int = 5,
+    output_activation: str = "softmax",
+) -> keras.Model:
+    """Construct a Multi-Layer Perceptron for 19-feature HAR.
+
+    Architecture:
+        Input (19,)
+        -> Dense(64, relu) -> Dropout(0.3)
+        -> Dense(32, relu) -> Dropout(0.3)
+        -> Dense(5, softmax)
+    """
+    inp = keras.Input(shape=(input_length,), name="input")
+
+    x = layers.Dense(
+        units=hidden1_units,
+        activation=hidden_activation,
+        name="dense_1",
+    )(inp)
+    x = layers.Dropout(dropout_rate, name="dropout_1")(x)
+
+    x = layers.Dense(
+        units=hidden2_units,
+        activation=hidden_activation,
+        name="dense_2",
+    )(x)
+    x = layers.Dropout(dropout_rate, name="dropout_2")(x)
+
+    out = layers.Dense(
+        units=num_classes,
+        activation=output_activation,
+        name="dense_output",
+    )(x)
+
+    model = keras.Model(inputs=inp, outputs=out, name="har_mlp")
+    return model
 
 
 # ---------------------------------------------------------------------------
@@ -205,11 +255,13 @@ def build_model(model_type: str = "1dcnn", **kwargs) -> keras.Model:
     Parameters
     ----------
     model_type : str
-        One of "1dcnn", "cnn_lstm", "wclstm".
+        One of "mlp", "1dcnn", "cnn_lstm", "wclstm".
     **kwargs
         Forwarded to the specific builder function.
     """
-    if model_type == "1dcnn":
+    if model_type == "mlp":
+        return build_mlp(**kwargs)
+    elif model_type == "1dcnn":
         return build_1dcnn(**kwargs)
     elif model_type == "cnn_lstm":
         return build_cnn_lstm(**kwargs)

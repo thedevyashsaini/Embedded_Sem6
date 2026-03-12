@@ -89,5 +89,44 @@
         "use_bias": true
       }
     }
-  ]
+  ],
+  "training_info": {
+    "epochs": 30,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "final_train_accuracy": 0.9500085115432739,
+    "final_test_accuracy": 0.9277231097221375,
+    "final_test_loss": 0.18047527968883514,
+    "training_time_seconds": 13.39,
+    "data_mode": "features",
+    "feature_names": [
+      "tBodyAcc-mean()-X",
+      "tBodyAcc-mean()-Y",
+      "tBodyAcc-mean()-Z",
+      "tBodyAcc-std()-X",
+      "tBodyAcc-std()-Y",
+      "tBodyAcc-std()-Z",
+      "tGravityAcc-mean()-X",
+      "tGravityAcc-mean()-Y",
+      "tGravityAcc-mean()-Z",
+      "tGravityAcc-std()-X",
+      "tGravityAcc-std()-Y",
+      "tGravityAcc-std()-Z",
+      "tBodyAccMag-mean()",
+      "tBodyAccMag-std()",
+      "tGravityAccMag-mean()",
+      "tGravityAccMag-std()",
+      "tBodyAccJerkMag-mean()",
+      "tBodyAccJerkMag-std()",
+      "tBodyGyroMag-mean()"
+    ],
+    "class_names": [
+      "WALKING",
+      "SITTING",
+      "STANDING",
+      "LAYING",
+      "TRANSITION"
+    ],
+    "num_classes": 5
+  }
 }

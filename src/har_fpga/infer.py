@@ -129,7 +129,9 @@ def _preprocess_for_model(
         X = X_2d.reshape(N, T, C)
     else:
         X = scaler.transform(X_raw)
-        X = X[..., np.newaxis]  # (N, 19, 1) for 1D-CNN
+        if model_type == "1dcnn":
+            X = X[..., np.newaxis]  # (N, 19, 1) for 1D-CNN
+        # MLP keeps flat (N, 19) shape
 
     return X
 

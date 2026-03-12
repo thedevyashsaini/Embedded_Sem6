@@ -182,7 +182,7 @@ def train(
     scaler.save(artifact_dir / "scaler.json")
 
     # ---- Reshape for Conv1D if 1D-CNN: (N, 19) -> (N, 19, 1) ----
-    if data_mode == "features":
+    if data_mode == "features" and model_type == "1dcnn":
         X_train = X_train[..., np.newaxis]
         X_test = X_test[..., np.newaxis]
 
