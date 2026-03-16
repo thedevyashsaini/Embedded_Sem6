@@ -3,59 +3,59 @@
   "results": [
     {
       "variant": "fp32",
-      "accuracy": 0.9348489989820156,
-      "inference_time_s": 0.1340567600000213,
-      "weight_size_bytes": 14100,
+      "accuracy": 0.9334916864608076,
+      "inference_time_s": 0.5486492399999406,
+      "weight_size_bytes": 15892,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.7576374745417516,
-        "STANDING": 0.8627819548872181,
+        "SITTING": 0.7657841140529531,
+        "STANDING": 0.8477443609022557,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
-      "total_params": 3525
+      "total_params": 3973
     },
     {
       "variant": "fp16",
-      "accuracy": 0.9348489989820156,
-      "inference_time_s": 0.15124055999967823,
-      "weight_size_bytes": 7050,
+      "accuracy": 0.9334916864608076,
+      "inference_time_s": 0.6056322000011278,
+      "weight_size_bytes": 7946,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.7576374745417516,
-        "STANDING": 0.8627819548872181,
+        "SITTING": 0.7657841140529531,
+        "STANDING": 0.8477443609022557,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
-      "total_params": 3525
+      "total_params": 3973
     },
     {
       "variant": "int16",
-      "accuracy": 0.9348489989820156,
-      "inference_time_s": 0.14039132999969298,
-      "weight_size_bytes": 7050,
+      "accuracy": 0.9334916864608076,
+      "inference_time_s": 0.5940649900003336,
+      "weight_size_bytes": 7946,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.7576374745417516,
-        "STANDING": 0.8627819548872181,
+        "SITTING": 0.7657841140529531,
+        "STANDING": 0.8477443609022557,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
-      "total_params": 3525
+      "total_params": 3973
     },
     {
       "variant": "int8",
-      "accuracy": 0.9348489989820156,
-      "inference_time_s": 0.12646333999982745,
-      "weight_size_bytes": 3525,
+      "accuracy": 0.9338310145911096,
+      "inference_time_s": 0.3042677800011006,
+      "weight_size_bytes": 3973,
       "per_class_accuracy": {
         "WALKING": 1.0,
-        "SITTING": 0.7576374745417516,
-        "STANDING": 0.8627819548872181,
+        "SITTING": 0.7657841140529531,
+        "STANDING": 0.849624060150376,
         "LAYING": 1.0,
         "TRANSITION": 0.0
       },
-      "total_params": 3525
+      "total_params": 3973
     }
   ]
 }

@@ -1,36 +1,52 @@
 {
   "dtype": "int8",
   "layers": {
-    "conv1d/kernel": {
+    "conv1d_1/kernel": {
       "shape": [
         19,
         1,
         12
       ],
       "count": 228,
-      "scale": 0.010288044223635216
+      "scale": 0.007925636186374454
     },
-    "conv1d/bias": {
+    "conv1d_1/bias": {
       "shape": [
         12
       ],
       "count": 12,
-      "scale": 0.0030704171169461227
+      "scale": 0.002452594088757132
+    },
+    "conv1d_2/kernel": {
+      "shape": [
+        1,
+        12,
+        8
+      ],
+      "count": 96,
+      "scale": 0.008368744624881293
+    },
+    "conv1d_2/bias": {
+      "shape": [
+        8
+      ],
+      "count": 8,
+      "scale": 0.0017462319980456134
     },
     "dense_output/kernel": {
       "shape": [
-        12,
+        8,
         5
       ],
-      "count": 60,
-      "scale": 0.010880693675964836
+      "count": 40,
+      "scale": 0.01151230673151692
     },
     "dense_output/bias": {
       "shape": [
         5
       ],
       "count": 5,
-      "scale": 0.002672586854048601
+      "scale": 0.0022367375103507455
     }
   }
 }

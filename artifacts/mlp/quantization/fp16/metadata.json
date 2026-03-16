@@ -27,12 +27,25 @@
       ],
       "count": 32
     },
-    "dense_output/kernel": {
+    "dense_3/kernel": {
       "shape": [
         32,
+        16
+      ],
+      "count": 512
+    },
+    "dense_3/bias": {
+      "shape": [
+        16
+      ],
+      "count": 16
+    },
+    "dense_output/kernel": {
+      "shape": [
+        16,
         5
       ],
-      "count": 160
+      "count": 80
     },
     "dense_output/bias": {
       "shape": [

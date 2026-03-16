@@ -1,0 +1,54 @@
+{
+  "dtype": "int16",
+  "layers": {
+    "conv2d_1/kernel": {
+      "shape": [
+        3,
+        3,
+        1,
+        16
+      ],
+      "count": 144,
+      "scale": 2.0826026962372944e-05
+    },
+    "conv2d_1/bias": {
+      "shape": [
+        16
+      ],
+      "count": 16,
+      "scale": 1.4621333876269364e-05
+    },
+    "conv2d_2/kernel": {
+      "shape": [
+        3,
+        3,
+        16,
+        32
+      ],
+      "count": 4608,
+      "scale": 2.839575682036531e-05
+    },
+    "conv2d_2/bias": {
+      "shape": [
+        32
+      ],
+      "count": 32,
+      "scale": 1.0116472778916378e-05
+    },
+    "dense_output/kernel": {
+      "shape": [
+        32,
+        5
+      ],
+      "count": 160,
+      "scale": 3.924323462747249e-05
+    },
+    "dense_output/bias": {
+      "shape": [
+        5
+      ],
+      "count": 5,
+      "scale": 6.780582697138954e-06
+    }
+  }
+}

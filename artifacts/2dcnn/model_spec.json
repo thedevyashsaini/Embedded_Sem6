@@ -1,0 +1,225 @@
+{
+  "model_name": "har_2dcnn",
+  "total_params": 4965,
+  "input_shape": [
+    null,
+    128,
+    9,
+    1
+  ],
+  "output_shape": [
+    null,
+    5
+  ],
+  "layers": [
+    {
+      "name": "input",
+      "type": "InputLayer",
+      "output_shape": [
+        null,
+        128,
+        9,
+        1
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {}
+    },
+    {
+      "name": "conv2d_1",
+      "type": "Conv2D",
+      "output_shape": [
+        null,
+        128,
+        9,
+        16
+      ],
+      "param_count": 160,
+      "weight_shapes": {
+        "kernel": [
+          3,
+          3,
+          1,
+          16
+        ],
+        "bias": [
+          16
+        ]
+      },
+      "config": {
+        "filters": 16,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "strides": [
+          1,
+          1
+        ],
+        "padding": "same",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "maxpool_1",
+      "type": "MaxPooling2D",
+      "output_shape": [
+        null,
+        64,
+        9,
+        16
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "pool_size": [
+          2,
+          1
+        ],
+        "strides": [
+          2,
+          1
+        ],
+        "padding": "valid"
+      }
+    },
+    {
+      "name": "conv2d_2",
+      "type": "Conv2D",
+      "output_shape": [
+        null,
+        64,
+        9,
+        32
+      ],
+      "param_count": 4640,
+      "weight_shapes": {
+        "kernel": [
+          3,
+          3,
+          16,
+          32
+        ],
+        "bias": [
+          32
+        ]
+      },
+      "config": {
+        "filters": 32,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "strides": [
+          1,
+          1
+        ],
+        "padding": "same",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "maxpool_2",
+      "type": "MaxPooling2D",
+      "output_shape": [
+        null,
+        32,
+        9,
+        32
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "pool_size": [
+          2,
+          1
+        ],
+        "strides": [
+          2,
+          1
+        ],
+        "padding": "valid"
+      }
+    },
+    {
+      "name": "dropout_1",
+      "type": "Dropout",
+      "output_shape": [
+        null,
+        32,
+        9,
+        32
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "rate": 0.3
+      }
+    },
+    {
+      "name": "global_avg_pool",
+      "type": "GlobalAveragePooling2D",
+      "output_shape": [
+        null,
+        32
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {}
+    },
+    {
+      "name": "dense_output",
+      "type": "Dense",
+      "output_shape": [
+        null,
+        5
+      ],
+      "param_count": 165,
+      "weight_shapes": {
+        "kernel": [
+          32,
+          5
+        ],
+        "bias": [
+          5
+        ]
+      },
+      "config": {
+        "units": 5,
+        "activation": "softmax",
+        "use_bias": true
+      }
+    }
+  ],
+  "training_info": {
+    "epochs": 30,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "final_train_accuracy": 0.9569801092147827,
+    "final_test_accuracy": 0.9328130483627319,
+    "final_test_loss": 0.15079504251480103,
+    "training_time_seconds": 38.83,
+    "data_mode": "raw",
+    "feature_names": [
+      "body_acc_x",
+      "body_acc_y",
+      "body_acc_z",
+      "body_gyro_x",
+      "body_gyro_y",
+      "body_gyro_z",
+      "total_acc_x",
+      "total_acc_y",
+      "total_acc_z"
+    ],
+    "class_names": [
+      "WALKING",
+      "SITTING",
+      "STANDING",
+      "LAYING",
+      "TRANSITION"
+    ],
+    "num_classes": 5
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "model_type": "2dcnn",
+  "results": [
+    {
+      "variant": "fp32",
+      "accuracy": 0.9328130302002036,
+      "inference_time_s": 0.8690228999992542,
+      "weight_size_bytes": 19860,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.769857433808554,
+        "STANDING": 0.8872180451127819,
+        "LAYING": 0.9534450651769087,
+        "TRANSITION": 0.0
+      },
+      "total_params": 4965
+    },
+    {
+      "variant": "fp16",
+      "accuracy": 0.9328130302002036,
+      "inference_time_s": 0.7579590300003474,
+      "weight_size_bytes": 9930,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.769857433808554,
+        "STANDING": 0.8872180451127819,
+        "LAYING": 0.9534450651769087,
+        "TRANSITION": 0.0
+      },
+      "total_params": 4965
+    },
+    {
+      "variant": "int16",
+      "accuracy": 0.9328130302002036,
+      "inference_time_s": 0.4175109200004954,
+      "weight_size_bytes": 9930,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.769857433808554,
+        "STANDING": 0.8872180451127819,
+        "LAYING": 0.9534450651769087,
+        "TRANSITION": 0.0
+      },
+      "total_params": 4965
+    },
+    {
+      "variant": "int8",
+      "accuracy": 0.9317950458092976,
+      "inference_time_s": 0.47276915999973423,
+      "weight_size_bytes": 4965,
+      "per_class_accuracy": {
+        "WALKING": 1.0,
+        "SITTING": 0.7637474541751528,
+        "STANDING": 0.8872180451127819,
+        "LAYING": 0.9534450651769087,
+        "TRANSITION": 0.0
+      },
+      "total_params": 4965
+    }
+  ]
+}

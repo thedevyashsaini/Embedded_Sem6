@@ -433,6 +433,9 @@ def main() -> None:
         X_2d = X_test_raw.reshape(N, T * C)
         X_2d = scaler.transform(X_2d)
         X_test = X_2d.reshape(N, T, C)
+        # For 2D-CNN: add channel dimension (N, T, C) -> (N, T, C, 1)
+        if model_type == "2dcnn":
+            X_test = X_test[..., np.newaxis]
     else:
         X_test = scaler.transform(X_test_raw)
         if model_type == "1dcnn":

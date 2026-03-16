@@ -1,6 +1,6 @@
 {
   "model_name": "har_mlp",
-  "total_params": 3525,
+  "total_params": 3973,
   "input_shape": [
     null,
     19
@@ -94,16 +94,52 @@
       }
     },
     {
+      "name": "dense_3",
+      "type": "Dense",
+      "output_shape": [
+        null,
+        16
+      ],
+      "param_count": 528,
+      "weight_shapes": {
+        "kernel": [
+          32,
+          16
+        ],
+        "bias": [
+          16
+        ]
+      },
+      "config": {
+        "units": 16,
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
+      "name": "dropout_3",
+      "type": "Dropout",
+      "output_shape": [
+        null,
+        16
+      ],
+      "param_count": 0,
+      "weight_shapes": {},
+      "config": {
+        "rate": 0.3
+      }
+    },
+    {
       "name": "dense_output",
       "type": "Dense",
       "output_shape": [
         null,
         5
       ],
-      "param_count": 165,
+      "param_count": 85,
       "weight_shapes": {
         "kernel": [
-          32,
+          16,
           5
         ],
         "bias": [
@@ -121,10 +157,10 @@
     "epochs": 30,
     "batch_size": 64,
     "learning_rate": 0.001,
-    "final_train_accuracy": 0.9580003619194031,
-    "final_test_accuracy": 0.9348490238189697,
-    "final_test_loss": 0.19018757343292236,
-    "training_time_seconds": 7.69,
+    "final_train_accuracy": 0.9581703543663025,
+    "final_test_accuracy": 0.9334917068481445,
+    "final_test_loss": 0.16598621010780334,
+    "training_time_seconds": 12.23,
     "data_mode": "features",
     "feature_names": [
       "tBodyAcc-mean()-X",

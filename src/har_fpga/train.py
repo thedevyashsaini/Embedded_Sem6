@@ -1,8 +1,10 @@
 """
-train.py — Training pipeline for HAR models (1D-CNN, CNN+LSTM, WCLSTM).
+train.py — Training pipeline for HAR models (MLP, 1D-CNN, 2D-CNN, CNN+LSTM, WCLSTM).
 
 Usage:
-    uv run python -m har_fpga.train --model 1dcnn                  # default 1D-CNN
+    uv run python -m har_fpga.train --model mlp                    # MLP
+    uv run python -m har_fpga.train --model 1dcnn                  # 1D-CNN
+    uv run python -m har_fpga.train --model 2dcnn                  # 2D-CNN
     uv run python -m har_fpga.train --model cnn_lstm               # CNN+LSTM (DCLSTM)
     uv run python -m har_fpga.train --model wclstm                 # Wavelet CNN+LSTM
     uv run python -m har_fpga.train --model cnn_lstm --epochs 50 --batch-size 32
@@ -183,6 +185,11 @@ def train(
 
     # ---- Reshape for Conv1D if 1D-CNN: (N, 19) -> (N, 19, 1) ----
     if data_mode == "features" and model_type == "1dcnn":
+        X_train = X_train[..., np.newaxis]
+        X_test = X_test[..., np.newaxis]
+
+    # ---- Reshape for Conv2D if 2D-CNN: (N, 128, 9) -> (N, 128, 9, 1) ----
+    if model_type == "2dcnn":
         X_train = X_train[..., np.newaxis]
         X_test = X_test[..., np.newaxis]
 

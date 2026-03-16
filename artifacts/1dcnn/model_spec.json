@@ -1,6 +1,6 @@
 {
   "model_name": "har_1dcnn",
-  "total_params": 305,
+  "total_params": 389,
   "input_shape": [
     null,
     19,
@@ -24,7 +24,7 @@
       "config": {}
     },
     {
-      "name": "conv1d",
+      "name": "conv1d_1",
       "type": "Conv1D",
       "output_shape": [
         null,
@@ -56,11 +56,43 @@
       }
     },
     {
+      "name": "conv1d_2",
+      "type": "Conv1D",
+      "output_shape": [
+        null,
+        1,
+        8
+      ],
+      "param_count": 104,
+      "weight_shapes": {
+        "kernel": [
+          1,
+          12,
+          8
+        ],
+        "bias": [
+          8
+        ]
+      },
+      "config": {
+        "filters": 8,
+        "kernel_size": [
+          1
+        ],
+        "strides": [
+          1
+        ],
+        "padding": "valid",
+        "activation": "relu",
+        "use_bias": true
+      }
+    },
+    {
       "name": "flatten",
       "type": "Flatten",
       "output_shape": [
         null,
-        12
+        8
       ],
       "param_count": 0,
       "weight_shapes": {},
@@ -73,10 +105,10 @@
         null,
         5
       ],
-      "param_count": 65,
+      "param_count": 45,
       "weight_shapes": {
         "kernel": [
-          12,
+          8,
           5
         ],
         "bias": [
@@ -94,10 +126,10 @@
     "epochs": 30,
     "batch_size": 64,
     "learning_rate": 0.001,
-    "final_train_accuracy": 0.9500085115432739,
-    "final_test_accuracy": 0.9277231097221375,
-    "final_test_loss": 0.18047527968883514,
-    "training_time_seconds": 13.39,
+    "final_train_accuracy": 0.9515388607978821,
+    "final_test_accuracy": 0.9256871342658997,
+    "final_test_loss": 0.18255344033241272,
+    "training_time_seconds": 15.1,
     "data_mode": "features",
     "feature_names": [
       "tBodyAcc-mean()-X",

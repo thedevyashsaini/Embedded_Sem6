@@ -127,6 +127,9 @@ def _preprocess_for_model(
         X_2d = X_raw.reshape(N, T * C)
         X_2d = scaler.transform(X_2d)
         X = X_2d.reshape(N, T, C)
+        # For 2D-CNN: add channel dimension (N, T, C) -> (N, T, C, 1)
+        if model_type == "2dcnn":
+            X = X[..., np.newaxis]
     else:
         X = scaler.transform(X_raw)
         if model_type == "1dcnn":

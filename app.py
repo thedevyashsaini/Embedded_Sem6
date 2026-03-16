@@ -20,11 +20,12 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 ARTIFACTS_ROOT = PROJECT_ROOT / "artifacts"
-MODEL_TYPES = ["mlp", "1dcnn", "cnn_lstm", "wclstm"]
+MODEL_TYPES = ["mlp", "1dcnn", "2dcnn", "cnn_lstm", "wclstm"]
 
 MODEL_DISPLAY = {
     "mlp": "MLP",
     "1dcnn": "1D-CNN",
+    "2dcnn": "2D-CNN",
     "cnn_lstm": "CNN+LSTM",
     "wclstm": "WCLSTM",
 }
@@ -32,6 +33,7 @@ MODEL_DISPLAY = {
 MODEL_COLORS = {
     "MLP": "#AB47BC",
     "1D-CNN": "#2196F3",
+    "2D-CNN": "#E91E63",
     "CNN+LSTM": "#4CAF50",
     "WCLSTM": "#FF9800",
 }
@@ -114,7 +116,7 @@ st.set_page_config(
 
 st.title("HAR Model Comparison Dashboard")
 st.markdown(
-    "Interactive comparison of **MLP**, **1D-CNN**, **CNN+LSTM (DCLSTM)**, "
+    "Interactive comparison of **MLP**, **1D-CNN**, **2D-CNN**, **CNN+LSTM (DCLSTM)**, "
     "and **WCLSTM** architectures for Human Activity Recognition on the UCI HAR dataset."
 )
 
